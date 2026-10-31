@@ -86,10 +86,10 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("hashchange", fromHash);
   // tema
   const root = document.documentElement;
-  try { const t = localStorage.getItem("mm-theme"); if (t) root.dataset.theme = t; } catch { }
+  try { const t = localStorage.getItem("fk-theme"); if (t) root.dataset.theme = t; } catch { }
   $("#theme").onclick = () => {
     const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
     root.dataset.theme = dark ? "light" : "dark";
-    try { localStorage.setItem("mm-theme", root.dataset.theme); } catch { }
+    try { localStorage.setItem("fk-theme", root.dataset.theme); } catch { }
   };
 });

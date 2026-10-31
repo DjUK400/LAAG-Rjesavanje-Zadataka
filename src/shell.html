@@ -8,14 +8,75 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>/*CSS*/</style>
+<!--fk-dizajn:start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap">
+<style id="fk-dizajn">/* Zajednički dizajn svih aplikacija (izvor: djuk400.github.io/dizajn) */
+:root{--fk-bg:#e9edeb;--fk-paper:#fbfcfa;--fk-ink:#16202a;--fk-ink2:#4b5761;--fk-rule:#c8d1ce;--fk-chip:#eef2f0;--fk-grid:#e4eae7;--fk-grid5:#ccd7d3;--fk-blue:#1c5aa8;--fk-blue-bg:#e6eef8;--fk-red:#b33a28;--fk-ok:#1f6e44;--fk-ok-bg:#e6f2ea;--fk-warn:#8a5a00;--fk-warn-bg:#fbf1dc;--fk-err:#a8261c;--fk-err-bg:#fbecea;--fk-h:#1d5fae;--fk-f:#bb3a2b;--fk-p:#1f774a;--fk-n:#b86e00;--fk-o:#7a40b8;
+  --fk-head:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --fk-body:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --fk-math:"STIX Two Text","Times New Roman",Times,serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--fk-bg:#0e1215;--fk-paper:#151a1e;--fk-ink:#e2e7e5;--fk-ink2:#a1acb1;--fk-rule:#2b353a;--fk-chip:#1c2327;--fk-grid:#1b2226;--fk-grid5:#263035;--fk-blue:#7cb0f2;--fk-blue-bg:#172333;--fk-red:#f2907b;--fk-ok:#6fcf98;--fk-ok-bg:#15291e;--fk-warn:#f0b75a;--fk-warn-bg:#2e2412;--fk-err:#ff8f80;--fk-err-bg:#2c1714;--fk-h:#72aaf1;--fk-f:#f08574;--fk-p:#63c590;--fk-n:#f0b04f;--fk-o:#c39bf2;color-scheme:dark}}
+:root[data-theme="dark"]{--fk-bg:#0e1215;--fk-paper:#151a1e;--fk-ink:#e2e7e5;--fk-ink2:#a1acb1;--fk-rule:#2b353a;--fk-chip:#1c2327;--fk-grid:#1b2226;--fk-grid5:#263035;--fk-blue:#7cb0f2;--fk-blue-bg:#172333;--fk-red:#f2907b;--fk-ok:#6fcf98;--fk-ok-bg:#15291e;--fk-warn:#f0b75a;--fk-warn-bg:#2e2412;--fk-err:#ff8f80;--fk-err-bg:#2c1714;--fk-h:#72aaf1;--fk-f:#f08574;--fk-p:#63c590;--fk-n:#f0b04f;--fk-o:#c39bf2;color-scheme:dark}
+/* gornja traka: povratak na sve aplikacije + tema */
+.fk-bar{box-sizing:border-box;max-width:var(--fk-w,1080px);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));
+  font:600 13px/1.2 var(--fk-head);letter-spacing:.07em;text-transform:uppercase}
+.fk-crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;min-width:0}
+.fk-crumbs a{color:var(--fk-ink2);text-decoration:none;padding:6px 0}
+.fk-crumbs a:hover{color:var(--fk-ink);text-decoration:underline;text-underline-offset:3px}
+.fk-crumbs span{color:var(--fk-rule)}
+.fk-bar button{flex:none;display:inline-flex;align-items:center;gap:6px;font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--fk-ink2);background:transparent;
+  border:1px solid var(--fk-rule);border-radius:4px;padding:5px 10px;min-height:32px;cursor:pointer}
+.fk-bar button:hover{color:var(--fk-ink);border-color:var(--fk-ink2)}
+.fk-bar a:focus-visible,.fk-bar button:focus-visible{outline:2px solid var(--fk-blue);outline-offset:2px}
+/* zaglavlje */
+:root body .fk-eyebrow{font:600 13px/1.3 var(--fk-head);letter-spacing:.09em;text-transform:uppercase;color:var(--fk-ink2);margin:0 0 4px}
+:root body .fk-h1{font-family:var(--fk-head);font-weight:700;font-size:clamp(28px,7vw,42px);line-height:1.05;letter-spacing:0;margin:0 0 8px;color:var(--fk-ink);text-wrap:balance}
+:root body .fk-lede{display:block;margin:0 0 18px;max-width:64ch;color:var(--fk-ink2);font:400 16px/1.5 var(--fk-body)}
+/* tabovi kao kartoteka */
+:root body .fk-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px;padding:0;background:transparent;border:0;border-radius:0;box-shadow:inset 0 -1.5px 0 var(--fk-ink)}
+:root body .fk-tabs>button,:root body .fk-tabs>a{flex:0 0 auto;font:600 16px/1.3 var(--fk-head);letter-spacing:.02em;color:var(--fk-ink2);background:transparent;
+  padding:8px 12px 8px;border:1.5px solid transparent;border-bottom:0;border-radius:6px 6px 0 0;cursor:pointer;white-space:nowrap;text-decoration:none}
+:root body .fk-tabs>button:hover{color:var(--fk-ink);border-color:transparent}
+:root body .fk-tabs>.on,:root body .fk-tabs>[aria-selected="true"]{color:var(--fk-ink);background:var(--fk-paper);border-color:var(--fk-ink);font-weight:600}
+:root{--fk-w:1000px}
+
+:root:root:root{--bg:var(--fk-bg);--card:var(--fk-paper);--ink:var(--fk-ink);--mute:var(--fk-ink2);--line:var(--fk-rule);--soft:var(--fk-chip);
+  --acc:var(--fk-blue);--acc-ink:var(--fk-paper);--ok:var(--fk-ok);--ok-bg:var(--fk-ok-bg);--no:var(--fk-err);--no-bg:var(--fk-err-bg);--warn:var(--fk-warn);
+  --sans:var(--fk-body)}
+html header.top{max-width:var(--fk-w);padding:22px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+html nav.tabs{position:sticky;top:0;z-index:5;background:var(--fk-bg);border:0;margin-top:0;padding-top:6px}
+html nav.tabs .inner.fk-tabs{max-width:var(--fk-w);margin:0 auto;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));
+  box-shadow:none;background:linear-gradient(var(--fk-ink),var(--fk-ink)) bottom/calc(100% - 32px) 1.5px no-repeat}
+html nav.tabs .inner.fk-tabs>button{border-bottom:0;padding:8px 12px}
+html main,html footer{max-width:var(--fk-w)}
+html .card{border-radius:4px;border-color:var(--fk-rule)}
+html .card h2{font:700 22px/1.2 var(--fk-head)}
+html .card h3{font:700 18px/1.25 var(--fk-head)}
+html input[type=text],html input:not([type]),html input[type=number],html textarea,html select{border-radius:4px;border:1.5px solid var(--fk-ink2)}
+html button{border-radius:4px;font-family:var(--fk-body)}
+html button.primary{background:var(--fk-ink);border-color:var(--fk-ink);color:var(--fk-paper);font-size:16px;padding:8px 16px}
+html button.ex{border:1px dashed var(--fk-ink2);border-radius:999px}
+html .subtabs{top:52px}
+html .subtabs button{border-radius:999px}
+html .eq,html details.theory,html .verdict{border-radius:4px}
+html .toast{border-radius:4px}
+html footer{padding:12px max(16px,env(safe-area-inset-right,0px)) 30px max(16px,env(safe-area-inset-left,0px));border-top:1px solid var(--fk-rule);font-size:13.5px;color:var(--fk-ink2)}
+</style>
+<script>(function(){var r=document.documentElement,k='fk-theme';try{var t=localStorage.getItem(k);if(t)r.dataset.theme=t}catch(e){}document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('#fk-theme');if(!b)return;var d=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=d?'light':'dark';try{localStorage.setItem(k,r.dataset.theme)}catch(e){}});})();</script>
+<!--fk-dizajn:end-->
 </head>
 <body>
-<header class="top">
-  <button class="themebtn" id="theme" title="Svijetla / tamna tema">◐</button>
-  <h1>MM Rješavač · Prvi kolokvijum</h1>
-  <p>Postavi zadatak, dobij rješenje sa postupkom. U svakom tabu su pravila i teorija tog poglavlja.</p>
+<!--fk-bar:start--><nav class="fk-bar" aria-label="Navigacija"><div class="fk-crumbs"><a href="https://djuk400.github.io/">← Sve aplikacije</a></div><button type="button" id="fk-theme" aria-label="Svijetla ili tamna tema"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.7a6.3 6.3 0 0 1 0 12.6z" fill="currentColor"/></svg>Tema</button></nav><!--fk-bar:end-->
+<!--fk-head--><header class="top">
+  <p class="fk-eyebrow">Matematika · prvi kolokvijum</p>
+  <h1 class="fk-h1">MM Rješavač</h1>
+  <p class="fk-lede">Postavi zadatak, dobij rješenje sa postupkom. U svakom tabu su pravila i teorija tog poglavlja: logika, skupovi, relacije, funkcije i indukcija.</p>
+  <button id="theme" hidden></button>
 </header>
-<nav class="tabs"><div class="inner">
+<nav class="tabs"><div class="inner fk-tabs">
   <button data-tab="logika" class="on">Matematička logika</button>
   <button data-tab="skupovi">Skupovi</button>
   <button data-tab="relacije">Relacije</button>
