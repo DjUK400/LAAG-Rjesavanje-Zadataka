@@ -2,7 +2,9 @@
 
 🔗 **Sajt:** https://djuk400.github.io/LAAG-Rjesavanje-Zadataka/
 
-Besplatna web aplikacija za studente prve godine (Građevinski fakultet, Univerzitet u Banjoj Luci) za vježbanje zadataka za **prvi kolokvijum iz matematike**. Upišeš zadatak i dobiješ rješenje **sa postupkom**, napisanim kao na vježbama. U svakom tabu su i **pravila i teorija** tog poglavlja, kao i dugmad sa zadacima iz materijala.
+Besplatna web aplikacija za studente prve godine (Građevinski fakultet, Univerzitet u Banjoj Luci) za vježbanje zadataka za **prvi kolokvijum iz matematike**. Upišeš zadatak i dobiješ rješenje **sa postupkom**, napisanim kao na vježbama.
+
+Svaki tab (oblast) ima **podtabove**: prvi je **📘 Pravila** sa svom teorijom te oblasti, a ostali su po jedna vrsta zadatka (npr. Indukcija → Pravila | Zbir | Djeljivost | Nejednakost). Uz svaki zadatak su dugmad sa primjerima iz materijala.
 
 Radi na računaru i na telefonu, ima svijetlu i tamnu temu i ne traži instalaciju ni nalog.
 
