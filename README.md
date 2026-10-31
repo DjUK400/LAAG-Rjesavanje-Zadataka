@@ -1,5 +1,7 @@
 # MM Rješavač · Prvi kolokvijum
 
+> Dio kolekcije **Aplikacije za fakultet**: https://djuk400.github.io/
+
 🔗 **Sajt:** https://djuk400.github.io/LAAG-Rjesavanje-Zadataka/
 
 Besplatna web aplikacija za studente prve godine (Građevinski fakultet, Univerzitet u Banjoj Luci) za vježbanje zadataka za **prvi kolokvijum iz matematike**. Upišeš zadatak i dobiješ rješenje **sa postupkom**, napisanim kao na vježbama.
