@@ -28,12 +28,5 @@ Kad zadatak nije podržan, sajt to javlja **obavještenjem u uglu ekrana** umjes
 Kod nejednakosti u indukciji pomoćna nejednakost (npr. k² − 2k − 1 ≥ 0) je provjerena računski. Na kolokvijumu je obrazloži sam.
 
 > ⚠️ Sajt služi za vježbu i provjeru. Na kolokvijumu postupak piši sam.
-
-## Za razvoj
-
-- `index.html` je cijela aplikacija u jednom fajlu (ovaj fajl objavljuje GitHub Pages).
-- `src/` sadrži izvorni kod, po jedan JS fajl za svaki tab (`logika.js`, `skupovi.js`, `relacije.js`, `funkcije.js`, `indukcija.js`) i zajedničko jezgro (`core.js`, `expr.js`).
-- `python3 build.py` spaja `src/` u `index.html`.
-
-### Objavljivanje
-U repou otvori **Settings → Pages → Deploy from a branch → `main` / `(root)` → Save**. Sajt je zatim dostupan na linku sa vrha stranice.
+>
+> 
