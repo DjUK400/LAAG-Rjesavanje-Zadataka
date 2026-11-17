@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MM Rješavač – logika, skupovi, relacije, funkcije, indukcija</title>
-<meta name="description" content="Rješavač zadataka za prvi kolokvijum iz matematike: tablice istinitosti, skupovi, relacije, funkcije i matematička indukcija – sa postupkom i pravilima.">
+<title>MM Rješavač – logika, skupovi, relacije, funkcije, indukcija, kompleksni brojevi</title>
+<meta name="description" content="Rješavač zadataka za prvi kolokvijum iz matematike: tablice istinitosti, skupovi, relacije, funkcije, matematička indukcija i kompleksni brojevi – sa postupkom i pravilima.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>/*CSS*/</style>
@@ -73,7 +73,7 @@ html footer{padding:12px max(16px,env(safe-area-inset-right,0px)) 30px max(16px,
 <!--fk-head--><header class="top">
   <p class="fk-eyebrow">Matematika · prvi kolokvijum</p>
   <h1 class="fk-h1">MM Rješavač</h1>
-  <p class="fk-lede">Postavi zadatak, dobij rješenje sa postupkom. U svakom tabu su pravila i teorija tog poglavlja: logika, skupovi, relacije, funkcije i indukcija.</p>
+  <p class="fk-lede">Postavi zadatak, dobij rješenje sa postupkom. U svakom tabu su pravila i teorija tog poglavlja: logika, skupovi, relacije, funkcije, indukcija i kompleksni brojevi.</p>
   <button id="theme" hidden></button>
 </header>
 <nav class="tabs"><div class="inner fk-tabs">
@@ -82,6 +82,8 @@ html footer{padding:12px max(16px,env(safe-area-inset-right,0px)) 30px max(16px,
   <button data-tab="relacije">Relacije</button>
   <button data-tab="funkcije">Funkcije</button>
   <button data-tab="indukcija">Indukcija</button>
+  <button data-tab="kompleksni">Kompleksni brojevi</button>
+  <button data-tab="trig">Trigonometrijski oblik</button>
 </div></nav>
 <main>
   <div class="panel on" id="tab-logika"></div>
@@ -89,8 +91,10 @@ html footer{padding:12px max(16px,env(safe-area-inset-right,0px)) 30px max(16px,
   <div class="panel" id="tab-relacije"></div>
   <div class="panel" id="tab-funkcije"></div>
   <div class="panel" id="tab-indukcija"></div>
+  <div class="panel" id="tab-kompleksni"></div>
+  <div class="panel" id="tab-trig"></div>
 </main>
-<footer>Rađeno prema materijalima sa vježbi (logika, skupovi, relacije, funkcije, indukcija). Rješenja provjeri – na kolokvijumu postupak piši sam. Kad nešto nije podržano, aplikacija to javlja obavještenjem u uglu ekrana.</footer>
+<footer>Rađeno prema materijalima sa vježbi (logika, skupovi, relacije, funkcije, indukcija, kompleksni brojevi). Rješenja provjeri – na kolokvijumu postupak piši sam. Kad nešto nije podržano, aplikacija to javlja obavještenjem u uglu ekrana.</footer>
 <div id="toasts"></div>
 <script>/*JS*/</script>
 <!--fk-legal:start--><div class="fk-legal" style="box-sizing:border-box;max-width:var(--fk-w,1080px);margin:28px auto 0;padding:12px max(16px,env(safe-area-inset-right,0px)) 28px max(16px,env(safe-area-inset-left,0px))"><p style="margin:0;padding-top:10px;border-top:1px solid var(--fk-rule,#c8d1ce);font:11.5px/1.45 var(--fk-body,system-ui,sans-serif);color:var(--fk-ink2,#4b5761);max-width:90ch;opacity:.85"><b>Odricanje od odgovornosti.</b> Sadržaj ovog sajta služi isključivo za vježbu i ličnu pripremu i nije zvanični materijal fakulteta ni predmetnih nastavnika. Sajt nije povezan sa Univerzitetom u Banjoj Luci ni sa Građevinskim fakultetom. Autor ne garantuje tačnost, potpunost ni aktuelnost pitanja, odgovora, rješenja i postupaka, niti da će se bilo koje pitanje ili tip zadatka pojaviti na kolokvijumu ili ispitu. Sajt se koristi na sopstvenu odgovornost: autor ne odgovara za rezultate na kolokvijumima i ispitima, za odluke donesene na osnovu sadržaja, niti za bilo kakvu direktnu ili indirektnu štetu nastalu korištenjem sajta. Za tačne informacije mjerodavni su zvanični materijali i predmetni nastavnici. Greške, pitanja i zahtjeve za uklanjanje sadržaja (npr. ako smatrate da je nešto objavljeno bez dozvole nosioca autorskih prava) pošaljite preko <a href="https://github.com/DjUK400/djuk400.github.io/issues" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">kontakt stranice na GitHubu</a>.</p></div><!--fk-legal:end-->

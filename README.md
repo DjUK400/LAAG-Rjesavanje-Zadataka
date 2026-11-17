@@ -4,9 +4,11 @@
 
 🔗 **Sajt:** https://djuk400.github.io/LAAG-Rjesavanje-Zadataka/
 
-Besplatna web aplikacija za studente prve godine (Građevinski fakultet, Univerzitet u Banjoj Luci) za vježbanje zadataka za **prvi kolokvijum iz matematike**. Upišeš zadatak i dobiješ rješenje **sa postupkom**, napisanim kao na vježbama.
+Besplatna web aplikacija za studente prve godine (Građevinski fakultet, Univerzitet u Banjoj Luci) za vježbanje zadataka iz matematike (LAAG): logika, skupovi, relacije, funkcije, indukcija i **kompleksni brojevi**. Upišeš zadatak i dobiješ rješenje **sa postupkom**, napisanim kao na vježbama.
 
 Svaki tab (oblast) ima **podtabove**: prvi je **📘 Pravila** sa svom teorijom te oblasti, a ostali su po jedna vrsta zadatka (npr. Indukcija → Pravila | Zbir | Djeljivost | Nejednakost). Uz svaki zadatak su dugmad sa primjerima iz materijala.
+
+U tabovima za kompleksne brojeve uz rješenje stoji i **💡 „Kako bi ovo inženjer vidio odmah“** (brži put do rezultata), a posljednji podtab je **⚡ Vidi odmah**: trening pitanja koja se, uz razumijevanje, rješavaju u glavi za par sekundi.
 
 Radi na računaru i na telefonu, ima svijetlu i tamnu temu i ne traži instalaciju ni nalog.
 
@@ -19,6 +21,8 @@ Radi na računaru i na telefonu, ima svijetlu i tamnu temu i ne traži instalaci
 | **Relacije** | Provjera refleksivnosti, simetričnosti, antisimetričnosti i tranzitivnosti sa obrazloženjem ili kontraprimjerom; matrica i graf relacije; klase ekvivalencije i količnički skup; konstrukcija relacije sa zadatim svojstvima; broj relacija na skupu od n elemenata. |
 | **Funkcije** | Da li je relacija preslikavanje, injekcija, sirjekcija ili bijekcija (konačni skupovi); injektivnost, sirjektivnost i inverz za linearnu, razlomljeno-linearnu i kvadratnu funkciju, sa grafikom f i f⁻¹; smjena tipa f(x−1)=x² → f(x+1); funkcije zadate po dijelovima i kompozicija g∘f. |
 | **Indukcija** | Kompletan dokaz (baza + induktivni korak) za identitete sa zbirom, djeljivost (polinomi, A^(αn+p) ± B^(βn+q), stepen ± konstanta) i nejednakosti (L polinom ili Aⁿ, D polinom). |
+| **Kompleksni brojevi** | Računanje izraza (sabiranje, oduzimanje, množenje, dijeljenje, stepeni, konjugovani, modul) korak po korak, tačno i sa korijenima; stepeni broja i (iⁿ, zbirovi); jednakost kompleksnih brojeva: odredi x i y ili z (npr. (2x−1) + (y+3)i = 5 − 2i, z + 2z̄ = 3 − i); modul, konjugovani, −z i 1/z sa crtežom u kompleksnoj ravni. |
+| **Trigonometrijski oblik** | Algebarski → trigonometrijski oblik (modul, argument sa kvadrantom i referentnim uglom); trigonometrijski → algebarski; množenje i dijeljenje u trigonometrijskom obliku; Moavrova formula zⁿ sa svođenjem ugla na (−π, π]. Sve sa crtežom. |
 
 ## Šta nije podržano
 

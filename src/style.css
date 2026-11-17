@@ -142,3 +142,22 @@ footer{max-width:1000px;margin:0 auto;padding:0 16px 30px;color:var(--mute);font
 .rule-block ul,.rule-block ol{padding-left:20px}.rule-block li{margin:4px 0}
 .tolinks{float:right;margin-top:-30px;background:none;border:0;color:var(--acc);font-weight:600;font-size:.84rem;padding:4px 0}
 @media (max-width:640px){.tolinks{float:none;margin:0 0 4px}}
+/* kompleksni brojevi */
+.insight{margin:12px 0;padding:10px 13px;border-left:4px solid var(--fk-n,#b86e00);background:var(--fk-warn-bg,#fbf1dc);border-radius:4px;font-size:.93rem}
+.insight ul{margin:6px 0 0;padding-left:20px}.insight li{margin:3px 0}
+details.theory .insight{background:var(--card)}
+svg.cplane{max-width:340px;color:var(--ink)}
+svg.cplane .grid{stroke:var(--line);stroke-width:.7}
+svg.cplane .axis{stroke:var(--ink);stroke-width:1.3}
+svg.cplane .tick{font:10.5px var(--mono);fill:var(--mute)}
+svg.cplane .axl{font:italic 600 13px var(--fk-math,serif);fill:var(--ink)}
+svg.cplane .ptl{font:600 13px var(--mono)}
+svg.cplane .arcl{font:italic 600 13px var(--fk-math,serif)}
+svg.cplane .proj{stroke:var(--mute);stroke-dasharray:3 3;stroke-width:1}
+svg.cplane .ucirc{fill:none;stroke:var(--mute);stroke-dasharray:4 4}
+.drill-q{background:var(--soft);border-radius:4px;padding:14px 16px;margin:6px 0 4px;font-size:1.15rem;min-height:2.6em}
+.drill-q .big{font-size:1.25rem}
+.drill-score{margin-left:auto;font-size:.85rem;color:var(--mute);font-weight:600}
+table.angtab{font-family:var(--mono);font-size:.85rem;margin:10px 0}
+table.angtab th,table.angtab td{padding:4px 8px;text-align:center;border-bottom:1px solid var(--line)}
+.subtabs button[data-sub]:last-child:not([data-sub="pravila"]){}
