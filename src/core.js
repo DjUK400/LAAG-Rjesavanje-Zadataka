@@ -133,3 +133,11 @@ function sortElems(arr) {
   });
 }
 const sup = n => String(n).replace(/[-0-9]/g, c => "⁻⁰¹²³⁴⁵⁶⁷⁸⁹"["-0123456789".indexOf(c)]);
+
+// ---------- način razmišljanja: „Kako bi inženjer vidio odmah“ i „Ishod zadatka“ ----------
+function insightBox(items, title = "💡 Kako bi ovo inženjer vidio odmah") {
+  items = (items || []).filter(Boolean);
+  if (!items.length) return "";
+  return `<div class="insight"><b>${title}</b><ul>${items.map(i => `<li>${i}</li>`).join("")}</ul></div>`;
+}
+function outcomeBox(html) { return `<div class="outcome"><b>🧭 Ishod zadatka:</b> ${html}</div>`; }

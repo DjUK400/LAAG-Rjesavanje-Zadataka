@@ -26,7 +26,7 @@ function analyzeFinite(X, Y, f, fname = "f") {
   const multi = X.filter(x => f.filter(p => p[0] === x).length > 1);
   if (noImg.length) { isMap = false; h += `<div class="step bad">✖ ${fname} nije preslikavanje jer ${noImg.join(", ")} ∈ X ${noImg.length > 1 ? "nisu" : "nije"} u relaciji ni sa jednim elementom y ∈ Y.</div>`; }
   if (multi.length) { isMap = false; const x = multi[0]; h += `<div class="step bad">✖ ${fname} nije preslikavanje jer ${f.filter(p => p[0] === x).map(pairStr).join(", ")} ∈ ${fname} – elementu ${x} su pridružene različite vrijednosti.</div>`; }
-  if (!isMap) return { h, isMap };
+  if (!isMap) return { h: h + insightBox(["Za „nije preslikavanje“ dovoljan je jedan element bez slike ili jedan element sa dvije slike."]), isMap };
   h += `<div class="step">✔ ${fname} jeste preslikavanje: (∀x ∈ X)(∃!y ∈ Y) (x, y) ∈ ${fname}.</div>`;
   const img = x => f.find(p => p[0] === x)[1];
   let inj = true, injWhy = "";
@@ -38,6 +38,10 @@ function analyzeFinite(X, Y, f, fname = "f") {
   h += `<tr class="${inj && surj ? "yes" : "no"}"><td><b>Bijektivno</b></td><td>${inj && surj ? "✔ DA" : "✖ NE"}</td><td>${inj && surj ? "injekcija i sirjekcija" : "nije istovremeno injekcija i sirjekcija"}</td></tr></table>`;
   if (inj && surj) h += `<div class="verdict ok">${fname}⁻¹ = {${f.map(([x, y]) => `(${y}, ${x})`).join(", ")}} &nbsp; (okrenemo parove)</div>`;
   h += `<div class="step mono">${fname}(X) = ${esc(setStr(sortElems([...new Set(X.map(img))])))}</div>`;
+  h += insightBox([
+    X.length > Y.length ? `|X| = ${X.length} > |Y| = ${Y.length}: preslikavanje <b>ne može</b> biti injekcija (Dirihleov princip). To se vidi bez gledanja parova.` : X.length < Y.length ? `|X| = ${X.length} < |Y| = ${Y.length}: preslikavanje <b>ne može</b> biti sirjekcija. Nema dovoljno originala.` : `|X| = |Y| = ${X.length}: kod konačnih skupova iste veličine injekcija ⇔ sirjekcija ⇔ bijekcija. Dovoljno je provjeriti jedno.`,
+    "Za „NE“ je dovoljan jedan kontraprimjer: dva elementa sa istom slikom (nije 1-1) ili jedan element iz Y bez originala (nije „na“).",
+  ]);
   return { h, isMap, inj, surj, img };
 }
 
@@ -235,7 +239,7 @@ function realnaAnaliza(src) {
     h += `<div class="step">f: ℝ → ℝ je konstantna funkcija.</div>`;
     h += `<div class="step bad"><b>NIJE injektivna.</b> Zašto? (∃ x₁ = 1, x₂ = 2 ∈ ℝ, 1 ≠ 2): f(1) = ${fmt(c)} i f(2) = ${fmt(c)} ⇒ f(1) = f(2). Mogli smo uzeti i bilo koja druga dva realna broja.</div>`;
     h += `<div class="step bad"><b>NIJE sirjektivna</b> na ℝ: npr. y = ${fmt(c.add(1))} nema original (f uzima samo vrijednost ${fmt(c)}).</div>`;
-    return h + `<div class="verdict no">Nije bijekcija ⇒ nema inverznu funkciju.</div>`;
+    return h + `<div class="verdict no">Nije bijekcija ⇒ nema inverznu funkciju.</div>` + outcomeBox("inverz ne postoji. To je ispravan odgovor, a ne nedostatak rješenja.") + insightBox(["Konstantna funkcija „slika“ cijelo ℝ u jednu tačku, pa ne može biti ni 1-1 ni „na“ ℝ. Vidi se bez računa."]);
   }
   if (D.deg() === 0 && N.deg() === 1) { // linearna
     const a = N.co(1), b = N.co(0);
@@ -243,7 +247,7 @@ function realnaAnaliza(src) {
     h += `<div class="step"><b>Injektivnost.</b> Neka su x₁, x₂ ∈ ℝ takvi da važi f(x₁) = f(x₂):<br><span class="mono">${ax("x₁")} = ${ax("x₂")}</span>${b.isZero() ? "" : `<br><span class="mono">${new Poly([0, a]).toString("x₁")} = ${new Poly([0, a]).toString("x₂")}</span> &nbsp; (oduzmemo ${fmt(b)})`}<br><span class="mono">x₁ = x₂</span> &nbsp; (podijelimo sa ${fmt(a)})<br>Dakle (∀x₁, x₂ ∈ ℝ) f(x₁) = f(x₂) ⇒ x₁ = x₂ ⇒ f <b>JESTE injektivna</b>.</div>`;
     const inv = new Poly([b.neg().div(a), Frac.of(1).div(a)]);
     h += `<div class="step"><b>Sirjektivnost.</b> Neka je y ∈ ℝ proizvoljan. Iz y = ${ax("x")} slijedi x = ${esc(new Rat(inv).toNice("y"))} ∈ ℝ i f(x) = y ⇒ f <b>JESTE sirjektivna</b>.</div>`;
-    return h + `<div class="verdict ok">✔ f je bijekcija ℝ → ℝ, pa postoji inverz: &nbsp; <span class="mono">f⁻¹(x) = ${esc(new Rat(inv).toNice("x"))}</span></div>` + plotPair(F, x => inv.eval(Frac.parse(x.toFixed(6))).toNumber());
+    return h + `<div class="verdict ok">✔ f je bijekcija ℝ → ℝ, pa postoji inverz: &nbsp; <span class="mono">f⁻¹(x) = ${esc(new Rat(inv).toNice("x"))}</span></div>` + insightBox(["Svaka linearna funkcija ax + b sa a ≠ 0 je bijekcija ℝ → ℝ. Inverz „poništava“ korake obrnutim redom: f radi ·a pa +b, a f⁻¹ radi −b pa :a."]) + plotPair(F, x => inv.eval(Frac.parse(x.toFixed(6))).toNumber());
   }
   if (D.deg() === 0 && N.deg() === 2) { // kvadratna
     const a = N.co(2), b = N.co(1), c = N.co(0);
@@ -252,7 +256,7 @@ function realnaAnaliza(src) {
     h += `<div class="step bad"><b>NIJE injektivna.</b> Zašto? (∃ x₁ = ${fmt(x1)}, x₂ = ${fmt(x2)} ∈ ℝ, x₁ ≠ x₂): f(${fmt(x1)}) = ${fmt(N.eval(x1))} i f(${fmt(x2)}) = ${fmt(N.eval(x2))} ⇒ f(x₁) = f(x₂). (Tačke simetrične oko tjemena x = ${fmt(hv)}.)</div>`;
     h += `<div class="step bad"><b>NIJE sirjektivna</b> na ℝ: tjeme je T(${fmt(hv)}, ${fmt(kv)}), pa f(x) ${a.sign() > 0 ? "≥" : "≤"} ${fmt(kv)} za svako x; npr. y = ${fmt(a.sign() > 0 ? kv.sub(1) : kv.add(1))} nema original.</div>`;
     const ainv = Frac.of(1).div(a);
-    h += `<div class="verdict no">Na ℝ → ℝ nije bijekcija ⇒ nema inverz.</div>`;
+    h += `<div class="verdict no">Na ℝ → ℝ nije bijekcija ⇒ nema inverz.</div>` + outcomeBox("na ℝ inverz ne postoji. Postoji samo ako se domen suzi na jednu „granu“ parabole (vidi ispod), pa odgovor zavisi od domena.") + insightBox(["Parabola nikad nije 1-1 na ℝ: tačke simetrične oko tjemena imaju istu vrijednost. Kontraprimjer se čita direktno iz tjemena."]);
     h += `<details class="explain" open><summary>Restrikcija koja jeste bijekcija</summary><p>Svođenjem na potpun kvadrat: y = ${a.eq(1) ? "" : a.eq(-1) ? "−" : fmt(a)}${hv.isZero() ? "x²" : `(x ${hv.sign() > 0 ? "−" : "+"} ${fmt(hv.abs())})²`}${kv.isZero() ? "" : ` ${kv.sign() > 0 ? "+" : "−"} ${fmt(kv.abs())}`}.<br>f: [${fmt(hv)}, +∞) → ${a.sign() > 0 ? `[${fmt(kv)}, +∞)` : `(−∞, ${fmt(kv)}]`} je bijekcija, a inverz je<br><span class="mono">f⁻¹(x) = ${hv.isZero() ? "" : fmt(hv) + " + "}√(${a.sign() > 0 ? (kv.isZero() ? "x" : `(x ${kv.sign() > 0 ? "−" : "+"} ${fmt(kv.abs())})`) : (kv.isZero() ? "−x" : `(${fmt(kv)} − x)`)}${a.abs().eq(1) ? "" : ` / ${fmt(a.abs())}`})</span> &nbsp; (za lijevu granu (−∞, ${fmt(hv)}] ispred korijena ide znak −).</p></details>`;
     return h;
   }
@@ -267,13 +271,13 @@ function realnaAnaliza(src) {
     const xs = d.neg().div(c), ys = a.div(c);
     const two = (c1, v1, c2, v2) => { const t = (c, v, first) => { if (c.isZero()) return ""; const s = c.abs().eq(1) ? v : c.abs() + v; return first ? (c.sign() < 0 ? "−" : "") + s : (c.sign() < 0 ? " − " : " + ") + s; }; const a1 = t(c1, v1, true); return (a1 + t(c2, v2, !a1)) || "0"; };
     h += `<div class="step">Domen: c·x + d ≠ 0 ⇒ x ≠ ${fmt(xs)}, &nbsp; f: ℝ \\ {${fmt(xs)}} → ℝ \\ {${fmt(ys)}}.</div>`;
-    if (det.isZero()) return h + `<div class="verdict no">ad − bc = 0 ⇒ funkcija je konstantna na domenu, nije injektivna.</div>`;
+    if (det.isZero()) return h + `<div class="verdict no">ad − bc = 0 ⇒ funkcija je konstantna na domenu, nije injektivna.</div>` + outcomeBox("inverz ne postoji: brojilac i imenilac se skrate, pa je f zapravo konstanta (sa „rupom“ u tački gdje je imenilac 0).");
     h += `<div class="step"><b>Injektivnost.</b> Neka je f(x₁) = f(x₂):<br><span class="mono">(${numS("x₁")}) / (${denS("x₁")}) = (${numS("x₂")}) / (${denS("x₂")})</span><br><span class="mono">(${numS("x₁")})(${denS("x₂")}) = (${numS("x₂")})(${denS("x₁")})</span><br>Nakon množenja, članovi ${fmt(a.mul(c))}x₁x₂ i ${fmt(b.mul(d))} se skrate:<br><span class="mono">${two(a.mul(d), "x₁", b.mul(c), "x₂")} = ${two(a.mul(d), "x₂", b.mul(c), "x₁")}</span><br><span class="mono">${fmt(det)}(x₁ − x₂) = 0 ⇒ x₁ = x₂</span> &nbsp; (jer je ad − bc = ${fmt(det)} ≠ 0)<br>⇒ f <b>JESTE injektivna</b>.</div>`;
     // y = (ax+b)/(cx+d) -> x = (dy - b)/(a - c y)
     const invN = p(d, b.neg()), invD = p(c.neg(), a);
     const inv = new Rat(invN, invD);
     h += `<div class="step"><b>Sirjektivnost.</b> Neka je y ∈ ℝ \\ {${fmt(ys)}}. Rješavamo y = f(x):<br><span class="mono">y(${denS("x")}) = ${numS("x")}</span><br><span class="mono">x(${new Poly([a.neg(), c]).toString("y")}) = ${new Poly([b, d.neg()]).toString("y")}</span><br><span class="mono">x = ${esc(inv.toString("y"))}</span>, što je definisano jer je y ≠ ${fmt(ys)}; i x ≠ ${fmt(xs)} (inače bi bilo ad − bc = 0) ⇒ f <b>JESTE sirjektivna</b>.</div>`;
-    return h + `<div class="verdict ok">✔ f je bijekcija, pa je &nbsp; <span class="mono">f⁻¹(x) = ${esc(inv.toString("x"))}</span>, &nbsp; f⁻¹: ℝ \\ {${fmt(ys)}} → ℝ \\ {${fmt(xs)}}</div>` + plotPair(F, x => { try { return inv.eval(Frac.parse(x.toFixed(6))).toNumber(); } catch { return NaN; } }, [xs.toNumber()], [ys.toNumber()]);
+    return h + `<div class="verdict ok">✔ f je bijekcija, pa je &nbsp; <span class="mono">f⁻¹(x) = ${esc(inv.toString("x"))}</span>, &nbsp; f⁻¹: ℝ \\ {${fmt(ys)}} → ℝ \\ {${fmt(xs)}}</div>` + insightBox([`Inverz od (ax + b)/(cx + d) se piše odmah: zamijene se mjesta a i d i promijene znaci b i c, pa je f⁻¹(x) = (dx − b)/(−cx + a).`, `Vrijednost a/c = ${fmt(ys)} f nikad ne dostiže (horizontalna asimptota). Zato je kodomen ℝ \\ {${fmt(ys)}}, a ne ℝ.`]) + plotPair(F, x => { try { return inv.eval(Frac.parse(x.toFixed(6))).toNumber(); } catch { return NaN; } }, [xs.toNumber()], [ys.toNumber()]);
   }
   notify("Ovaj tip funkcije nije podržan za automatski postupak (podržane su konstantna, linearna, kvadratna i razlomljeno-linearna).", "warn");
   return h + `<div class="verdict no">Nije podržan tip funkcije – uradi postupak ručno: f(x₁) = f(x₂) ⇒ ?, y = f(x) ⇒ x = ?</div>`;
@@ -316,7 +320,7 @@ function smjena() {
   h += `<li>Dobijamo <span class="mono">x = ${esc(back.toString("t"))}</span>, pa je</li>`;
   h += `<li><span class="mono">f(t) = ${esc($("#fs-rhs").value.replace(/x/g, "(" + back.toString("t") + ")"))} = ${esc(f.toString("t"))}</span>, odnosno <b class="mono">f(x) = ${esc(f.toString("x"))}</b>.</li>`;
   h += `<li>Sada lako dobijamo traženo: <span class="mono">f(${esc(linStr(c, d))}) = ${esc(g.toString("x"))}</span>${g.isPoly() && g.num.deg() >= 2 ? ` = <span class="mono">${esc(g.toFactored("x"))}</span>` : ""}.</li></ol>`;
-  return h + `<div class="verdict ok mono">f(${esc(linStr(c, d))}) = ${esc(g.toString("x"))}</div>`;
+  return h + `<div class="verdict ok mono">f(${esc(linStr(c, d))}) = ${esc(g.toString("x"))}</div>` + insightBox([`Smjena samo kaže šta je „unutra“: ako je f(${esc(linStr(a, b))}) = …, onda je u f(x) svaki x zamijenjen sa ${esc(back.toString("x"))}. Kod f(x − 1) = x² odmah vidiš da je f(t) = (t + 1)².`]);
 }
 
 function piecewiseCheck(pcs, name) {
@@ -366,6 +370,7 @@ function piecewiseCompose() {
     if (last && last.A.eq(r.A) && last.B.eq(r.B) && IV.cmp(last.I.b, r.I.a) === 0 && (last.I.bc || r.I.ac)) { last.I = { a: last.I.a, ac: last.I.ac, b: r.I.b, bc: r.I.bc }; }
     else merged.push({ ...r, I: { ...r.I } });
   }
+  if (h.includes("∅ (otpada)")) h += insightBox(["Neke kombinacije dijelova otpadaju (presjek je ∅). To je normalno: vrijednosti f(x) iz jednog dijela često uopšte ne padaju u neki dio od g."]);
   h += `<div class="verdict ok"><div class="piece">(g∘f)(x) = </div><div class="brace">${merged.map(r => `<div><span class="mono">${esc(linStr(r.A, r.B))}</span>, &nbsp; ${esc(condStr(r.I))}</div>`).join("")}</div></div>`;
   return h;
 }

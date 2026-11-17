@@ -105,6 +105,9 @@ function kompleksniRender() {
       <button class="ex" data-e="(x + yi)(2 - i) = 7 + i">(x+yi)(2−i)</button>
       <button class="ex" data-e="z + 2conj(z) = 3 - i">z + 2z̄</button>
       <button class="ex" data-e="(1+i)z = 3 - i">(1+i)z</button>
+      <span class="ex-label">Zamke:</span>
+      <button class="ex" data-e="z = conj(z)">z = z̄</button>
+      <button class="ex" data-e="z + conj(z) = 2i">z + z̄ = 2i</button>
     </div>
     <div class="out" id="eq-out"></div>
   </section>
@@ -245,8 +248,26 @@ function kxEquation(src) {
   const a21 = A.cx.im.sub(B.cx.im), a22 = A.cy.im.sub(B.cy.im), b2 = B.c0.im.sub(A.c0.im);
   const det = a11.mul(a22).sub(a12.mul(a21));
   if (det.isZero()) {
-    notify("Sistem nema jedinstveno rješenje.", "warn");
-    return h + `<div class="verdict no">Determinanta sistema je 0 – sistem nema jedinstveno rješenje (ili nema rješenja, ili ih ima beskonačno mnogo).</div>`;
+    const eq1 = linS(a11, a12, new Sd()) + " = " + b1, eq2 = linS(a21, a22, new Sd()) + " = " + b2;
+    h += `<div class="step">Prebacimo poznate članove na desnu stranu:<div class="eq mono">{ ${esc(eq1)}<br>{ ${esc(eq2)}</div></div>`;
+    const zero1 = a11.isZero() && a12.isZero(), zero2 = a21.isZero() && a22.isZero();
+    const bad = (zero1 && !b1.isZero()) || (zero2 && !b2.isZero());
+    let consistent = !bad;
+    // obje jednačine istog oblika: provjeri proporcionalnost desnih strana
+    if (consistent && !zero1 && !zero2) {
+      const [p, q] = !a11.isZero() ? [a21.div(a11), b1.mul(a21.div(a11))] : [a22.div(a12), b1.mul(a22.div(a12))];
+      consistent = q.eq(b2);
+    }
+    const Z = usesZ ? "z" : "(x, y)";
+    if (!consistent) {
+      return h + `<div class="verdict ok">Jednačina nema rješenja: ${zero1 || zero2 ? `jedna jednačina glasi 0 = ${esc(zero1 ? b1 : b2)}, što je nemoguće` : "lijeve strane su proporcionalne, a desne nisu, pa se jednačine međusobno isključuju"}.</div>` + outcomeBox(`skup rješenja je ∅. Ne postoji ${usesZ ? "kompleksan broj z" : "par realnih brojeva (x, y)"} koji zadovoljava jednačinu.`) + insightBox(["Jedna jednačina u ℂ daje dvije realne. Kad je jedna od njih oblika 0 = (broj ≠ 0), ili se dvije međusobno isključuju, rješenja nema."]);
+    }
+    if (zero1 && zero2) return h + `<div class="verdict ok">Svaki ${usesZ ? "z ∈ ℂ" : "par (x, y) ∈ ℝ²"} je rješenje (jednačina se svodi na 0 = 0).</div>` + outcomeBox("beskonačno mnogo rješenja: jednačina je identitet.");
+    const [c1, c2, bb] = !zero1 ? [a11, a12, b1] : [a21, a22, b2];
+    let par;
+    if (!c2.isZero()) { const k = c1.neg().div(c2), m = bb.div(c2); par = `x = t, &nbsp; y = ${esc(linS(k, new Sd(), m).replace("x", "t"))}, &nbsp; t ∈ ℝ`; }
+    else par = `x = ${esc(bb.div(c1))}, &nbsp; y = t, &nbsp; t ∈ ℝ`;
+    return h + `<div class="verdict ok">Obje jednačine kažu isto: <span class="mono">${esc(linS(c1, c2, new Sd()))} = ${esc(bb)}</span>, pa rješenja ima beskonačno mnogo:<br><span class="mono">${par}</span>${usesZ ? "<br>(z = x + yi za svako takvo x, y)" : ""}</div>` + outcomeBox(`beskonačno mnogo rješenja (jedna prava u ravni). Odgovor je cijela familija rješenja, a ne jedan broj.${usesZ && c2.isZero() === false && c1.isZero() ? "" : ""}`) + insightBox(["Kad realni i imaginarni dio daju istu jednačinu (ili je jedan od njih 0 = 0), ostaje samo jedna jednačina sa dvije nepoznate. Takav sistem ima beskonačno mnogo rješenja. Npr. z = z̄ važi za svaki realan z."]);
   }
   const x = b1.mul(a22).sub(a12.mul(b2)).div(det), y = a11.mul(b2).sub(b1.mul(a21)).div(det);
   const eq1 = linS(a11, a12, new Sd()) + " = " + b1, eq2 = linS(a21, a22, new Sd()) + " = " + b2;

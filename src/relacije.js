@@ -172,7 +172,14 @@ function relacijaSolve() {
     }
   }
   let h = `<div class="step">A = ${esc(setStr(A))}${ruleTxt ? `, &nbsp; xρy ⇔ <span class="mono">${esc(ruleTxt)}</span>` : ""}</div>`;
-  if (!R.length) { notify("Relacija je prazan skup – po definiciji sa vježbi binarna relacija mora biti neprazna.", "warn"); return h + `<div class="verdict no">ρ = ∅ (nijedan par ne zadovoljava pravilo).</div>`; }
+  if (!R.length) {
+    h += `<div class="step">Nijedan par (x, y) ∈ A × A ne zadovoljava pravilo, pa je <b>ρ = ∅</b>.</div>`;
+    h += `<table class="props"><tr class="no"><td><b>Refleksivnost</b></td><td>✖ NE</td><td>npr. (${esc(A[0])}, ${esc(A[0])}) ∉ ρ</td></tr>
+      <tr class="yes"><td><b>Simetričnost</b></td><td>✔ DA</td><td>uslov „ako xρy, onda yρx“ je tačan jer pretpostavka nikad nije ispunjena</td></tr>
+      <tr class="yes"><td><b>Antisimetričnost</b></td><td>✔ DA</td><td>isto: nema nijednog para, pa nema ni kontraprimjera</td></tr>
+      <tr class="yes"><td><b>Tranzitivnost</b></td><td>✔ DA</td><td>isto: nema lanca xρy ∧ yρz</td></tr></table>`;
+    return h + outcomeBox("relacija je prazna. Napomena: po definiciji sa predavanja binarna relacija je <i>neprazan</i> podskup od A², pa ovakvo pravilo formalno ne zadaje relaciju. Ako zadatak ipak pita za svojstva, ovo su odgovori.") + insightBox(["Uslov oblika „ako … onda …“ je tačan kad pretpostavka nikad nije ispunjena (iz netačnog slijedi bilo šta). Zato prazna relacija ima S, AS i T, ali nema R."]);
+  }
   h += `<div class="step"><b>Očigledno je</b> ρ = {${R.map(pairStr).join(", ")}} &nbsp; (${R.length} parova)</div>`;
   const P = REL.props(A, R);
   const name = { R: "Refleksivnost", S: "Simetričnost", AS: "Antisimetričnost", T: "Tranzitivnost" };
@@ -199,6 +206,12 @@ function relacijaSolve() {
       }
     }
   }
+  h += insightBox([
+    "Iz matrice jednim pogledom: R ⇔ na dijagonali su sve jedinice; S ⇔ matrica je simetrična oko dijagonale; AS ⇔ van dijagonale nikad nisu jedinice na oba simetrična mjesta.",
+    P.S.ok && P.AS.ok ? "Ova relacija je i simetrična i antisimetrična. To je moguće samo kad su svi parovi oblika (x, x): S i AS nisu suprotnosti." : !P.S.ok && !P.AS.ok ? "Ova relacija nije ni simetrična ni antisimetrična. „Nije S“ ne znači „jeste AS“: to nisu suprotnosti." : "",
+    !P.T.ok ? "Za „NE“ je dovoljan jedan kontraprimjer (jedan lanac koji ne radi). Za „DA“ treba pokazati da važi za sve." : "",
+    eqv ? "Klase ekvivalencije se vide odmah ako relaciju zapišeš kao f(x) = f(y): klase su skupovi elemenata sa istom vrijednošću f (ovdje su to grupisani blokovi u matrici)." : "",
+  ]);
   h += `<div class="grid2 vis"><div><h4>Matrica (tablica) relacije${cls ? " – složena po klasama" : ""}</h4>${REL.matrix(A, R, null)}${cls ? REL.matrix(A, R, cls) : ""}<p class="hint">${cls ? "Grupisane jedinice (obojeni blokovi) daju klase. " : ""}Refleksivna ⇔ dijagonala sve 1; simetrična ⇔ tablica simetrična oko dijagonale.</p></div><div><h4>Graf relacije</h4>${A.length <= 12 ? REL.graph(A, R) : "<p class='hint'>Graf se crta za najviše 12 elemenata.</p>"}</div></div>`;
   return h;
 }
@@ -214,11 +227,17 @@ function relacijaKonstruisi() {
     const P = REL.props(A, R);
     if (Object.entries(want).every(([k, w]) => w === "any" || (w === "yes") === P[k].ok)) found.push(R);
   }
-  if (!found.length) return `<div class="verdict no">✖ Na ovom skupu ne postoji (neprazna) relacija sa traženim svojstvima.</div>`;
+  if (!found.length) {
+    let why = "";
+    if (want.R === "yes" && want.S === "yes" && want.AS === "yes" && want.T === "no") why = "R, S i AS zajedno ostavljaju samo dijagonalu {(x, x)}, a ona je uvijek tranzitivna.";
+    else if (want.R === "yes" && want.S === "yes" && want.AS === "yes") why = "R, S i AS zajedno daju tačno jednu relaciju, dijagonalu {(x, x)}.";
+    else if (A.length === 1) why = `Na skupu sa jednim elementom postoji samo relacija {(${esc(A[0])}, ${esc(A[0])})}, a ona je i R i S i AS i T.`;
+    return `<div class="verdict ok">Takva relacija ne postoji.</div>${why ? `<div class="step">${why}</div>` : ""}` + outcomeBox(`provjerene su sve ${2 ** all.length - 1} neprazne relacije na ovom skupu i nijedna nema tražena svojstva. „Ne postoji“ je ispravan odgovor.`);
+  }
   found.sort((a, b) => a.length - b.length);
   // „ljepši“ primjer: najmanji koji sadrži bar jedan par x≠y
   const nice = found.find(R => R.some(([x, y]) => x !== y)) || found[0];
-  let h = `<div class="step">Pronađeno ukupno <b>${found.length}</b> takvih relacija. Primjeri:</div><ol class="steps">`;
+  let h = `<div class="step">Pronađeno ukupno <b>${found.length}</b> takvih relacija. Primjeri:</div>${found.length > 1 ? outcomeBox(`odgovor nije jedinstven: postoji ${found.length} takvih relacija, a zadatak traži bilo koju.`) : ""}<ol class="steps">`;
   const shown = [nice, ...found.filter(R => R !== nice).slice(0, 4)];
   shown.forEach(R => {
     const P = REL.props(A, R);

@@ -170,6 +170,19 @@ svg.cplane .ucirc{fill:none;stroke:var(--mute);stroke-dasharray:4 4}
 table.angtab{font-family:var(--mono);font-size:.85rem;margin:10px 0}
 table.angtab th,table.angtab td{padding:4px 8px;text-align:center;border-bottom:1px solid var(--line)}
 .subtabs button[data-sub]:last-child:not([data-sub="pravila"]){}
+
+.outcome{margin:12px 0;padding:10px 13px;border-left:4px solid var(--fk-h,#1d5fae);background:var(--fk-blue-bg,#e6eef8);border-radius:4px;font-size:.93rem}
+.drill-opts{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.drill-opts:empty{display:none}
+.drill-opts .opt{text-align:left;font-weight:500;padding:9px 12px;background:var(--card);border:1.5px solid var(--line)}
+.drill-opts .opt:hover:not(:disabled){border-color:var(--ink)}
+.drill-opts .opt.right{border-color:var(--ok);background:var(--ok-bg);color:var(--ok);font-weight:700}
+.drill-opts .opt.wrong{border-color:var(--no);background:var(--no-bg);color:var(--no)}
+.drill-opts .opt:disabled{cursor:default}
+.drill-q .big:not(.mono){font-size:1.05rem;line-height:1.45}
+.tableau{font-family:var(--mono);font-size:.9rem;line-height:1.7;background:var(--soft);border-radius:4px;padding:8px 12px;margin:8px 0;overflow-x:auto}
+.tableau .br{color:var(--mute)}.tableau .x{color:var(--no);font-weight:700}.tableau .okk{color:var(--ok);font-weight:700}
+.drill-q table.mat{display:table;margin:10px 0 0;font-size:.95rem}
 </style>
 <!--fk-dizajn:start-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -394,6 +407,14 @@ function sortElems(arr) {
   });
 }
 const sup = n => String(n).replace(/[-0-9]/g, c => "⁻⁰¹²³⁴⁵⁶⁷⁸⁹"["-0123456789".indexOf(c)]);
+
+// ---------- način razmišljanja: „Kako bi inženjer vidio odmah“ i „Ishod zadatka“ ----------
+function insightBox(items, title = "💡 Kako bi ovo inženjer vidio odmah") {
+  items = (items || []).filter(Boolean);
+  if (!items.length) return "";
+  return `<div class="insight"><b>${title}</b><ul>${items.map(i => `<li>${i}</li>`).join("")}</ul></div>`;
+}
+function outcomeBox(html) { return `<div class="outcome"><b>🧭 Ishod zadatka:</b> ${html}</div>`; }
 
 // ===================== PARSER ALGEBARSKIH IZRAZA + POLINOMI =====================
 "use strict";
@@ -986,6 +1007,15 @@ function logikaSolve(src, ones, eqMode = false) {
     h += `<div class="verdict no">✖ Iz posljednje kolone vidimo da formula NIJE tautologija.</div>`;
     h += `<div class="step">Netačna je za: ${bad.map(i => "(" + vars.map(v => `${v}=${rows[i].env[v] ? T : F}`).join(", ") + ")").join("; ")}.${allF ? " Formula je netačna u svim redovima – to je <b>kontradikcija</b>." : ""}</div>`;
   }
+  const nT = last.filter(Boolean).length, rowS = i => "(" + vars.map(v => `${v} = ${rows[i].env[v] ? T : F}`).join(", ") + ")";
+  if (!eqMode) h += outcomeBox(allT ? `tautologija – tačna u svih ${rows.length} redova.` : allF ? `kontradikcija – formula nije tačna ni u jednom redu (skup redova u kojima je tačna je ∅).` : `ni tautologija ni kontradikcija – tačna je u ${nT} od ${rows.length} redova.`);
+  const mainHint = { "⇒": "Glavni veznik je ⇒. Implikacija je ⊥ <b>samo</b> kad je lijeva strana ⊤, a desna ⊥, pa je dovoljno pogledati samo redove u kojima je lijeva strana tačna.", "∨": "Glavni veznik je ∨. Disjunkcija je ⊥ <b>samo</b> kad su oba dijela ⊥. Ako je jedan dio negacija nečega iz drugog dijela (npr. … ∨ ¬r), probaj slučajeve r = ⊤ i r = ⊥ i vidi da li je uvijek bar jedan dio ⊤.", "∧": "Glavni veznik je ∧. Konjunkcija je ⊤ <b>samo</b> kad su oba dijela ⊤, pa je jedan ⊥ dio dovoljan za ⊥.", "⇔": "Glavni veznik je ⇔. Formula je tautologija tačno kad lijeva i desna strana uvijek imaju istu vrijednost, tj. kad su to isti iskaz zapisan na dva načina (npr. kontrapozicija, De Morgan).", "¬": "Glavni veznik je ¬. ¬A je tautologija tačno kad je A kontradikcija." }[ast.op];
+  h += insightBox([
+    !allT && bad.length ? `Za odgovor „NIJE tautologija“ dovoljan je <b>jedan</b> red u kojem je formula ⊥ (kontraprimjer), npr. ${rowS(bad[0])}. Cijela tablica tada nije potrebna.` : "",
+    mainHint,
+    "Prečice: ako je lijeva strana implikacije ⊥ ili desna ⊤, implikacija je ⊤ bez gledanja ostatka. Ako je u konjunkciji jedan dio ⊥, cijela je ⊥.",
+    vars.length >= 3 ? `Sa ${vars.length} slova tablica ima ${rows.length} redova. Zato se isplati tražiti samo „opasne“ redove umjesto popunjavanja svih.` : "",
+  ]);
   return h;
 }
 
@@ -1350,7 +1380,9 @@ function skupoviRender() {
     const r = SET.ev(ast, e, steps);
     let h = `<div class="step">Zadato: ${Object.entries(e).map(([k, v]) => `${k} = ${esc(setStr(v))}`).join(", ")}</div><ol class="steps">`;
     steps.forEach(([s, v]) => h += `<li><span class="mono">${esc(s)}</span> = <b class="mono">${esc(setStr(v))}</b></li>`);
-    return h + `</ol><div class="verdict ok">${esc(SET.str(ast))} = ${esc(setStr(r))}</div>`;
+    h += `</ol><div class="verdict ok">${esc(SET.str(ast))} = ${esc(r.length ? setStr(r) : "∅")}</div>`;
+    if (!r.length) h += outcomeBox("rezultat je prazan skup ∅. To je potpuno ispravan odgovor: nijedan element ne zadovoljava sve uslove izraza.");
+    return h + insightBox(["Prije računanja pojednostavi izraz zakonima: A \\ B = A ∩ Bᶜ, (A ∪ B)ᶜ = Aᶜ ∩ Bᶜ, (A ∩ B)ᶜ = Aᶜ ∪ Bᶜ.", "Odmah prepoznaj: A ∩ Aᶜ = ∅, A ∪ Aᶜ = U, A \\ A = ∅, A Δ A = ∅, A Δ ∅ = A, (A \\ B) ∩ B = ∅, A ∩ ∅ = ∅, A ∪ ∅ = A."]);
   });
   $("#sk-all").onclick = () => runSafe($("#sk-out"), () => {
     const e = env(); if (!e.A || !e.B) throw new MathErr("Zadaj bar A i B.");
@@ -1396,12 +1428,30 @@ function skupoviRender() {
     }
     // analiza: obavezni / zabranjeni / slobodni
     let h = "";
-    if (!sols.length) return `<div class="verdict no">✖ Nijedan podskup ne zadovoljava uslove – zadatak nema rješenja.</div>`;
+    if (!sols.length) {
+      // zašto nema rješenja: koji uslov (sam ili u kombinaciji) je nemoguć
+      const subsets = []; for (let mask = 0; mask < (1 << S.length); mask++) subsets.push(S.filter((_, i) => mask >> i & 1));
+      const okFor = (c, X) => { const e = { X, S, U: S }, l = SET.ev(c.L, e), r = SET.ev(c.R, e); if (c.op === "=") return l.length === r.length && l.every(x => r.includes(x)); const sub = l.every(x => r.includes(x)); return c.op === "⊂" ? sub && l.length < r.length : sub; };
+      let why = "";
+      for (const c of conds) {
+        if (subsets.some(X => okFor(c, X))) continue;
+        const e0 = { X: [], S, U: S }, eS = { X: S, S, U: S };
+        const R0 = SET.ev(c.R, e0), RS = SET.ev(c.R, eS);
+        const Rconst = R0.length === RS.length && R0.every(x => RS.includes(x));
+        const canL = new Set(subsets.flatMap(X => SET.ev(c.L, { X, S, U: S })));
+        const missing = Rconst ? R0.filter(x => !canL.has(x)) : [];
+        why = missing.length ? `Uslov „${esc(c.line)}“ traži da lijeva strana sadrži ${esc(setStr(missing))}, a to nije moguće ni za jedan X ⊆ ${esc(setStr(S))}.` : `Već sam uslov „${esc(c.line)}“ nije ispunjen ni za jedan X ⊆ ${esc(setStr(S))}.`;
+        break;
+      }
+      if (!why) why = "Svaki uslov posebno ima rješenja, ali nijedan X ne zadovoljava sve uslove istovremeno (presjek njihovih skupova rješenja je ∅).";
+      return `<div class="verdict ok">Takav skup X ne postoji – zadatak nema rješenja.</div><div class="step">${why}</div>` + outcomeBox(`skup rješenja je ∅ (provjereno svih ${subsets.length} podskupova). Odgovor „ne postoji“ je ispravan i potpun odgovor.`);
+    }
     const must = S.filter(x => sols.every(X => X.includes(x))), never = S.filter(x => sols.every(X => !X.includes(x)));
     const free = S.filter(x => !must.includes(x) && !never.includes(x));
     h += `<div class="step">Elementi koji <b>moraju</b> biti u X: ${esc(setStr(must))}<br>Elementi koji <b>ne smiju</b> biti u X: ${esc(setStr(never))}<br>„Slobodni“ elementi: ${esc(setStr(free))}</div>`;
     h += `<div class="verdict ok">Zadatak ima ${sols.length} ${sols.length === 1 ? "rješenje" : "rješenja"}:<br><span class="mono">${sols.map(X => "X = " + (X.length ? setStr(X) : "∅")).join("<br>")}</span></div>`;
-    return h;
+    if (sols.length > 1) h += outcomeBox(`rješenje nije jedinstveno. Ima ih ${sols.length}${free.length && sols.length === 2 ** free.length ? ` = 2<sup>${free.length}</sup>, jer za svaki od ${free.length} slobodnih elemenata biramo da li je u X ili nije` : ""}. Odgovor mora navesti sva.`);
+    return h + insightBox(["Broj rješenja se vidi odmah: obavezni elementi moraju biti u X, zabranjeni ne smiju, a slobodnih k elemenata daje 2<sup>k</sup> mogućnosti.", "Zadatak može imati i 0 rješenja: npr. {1, 2} ∩ X = {3} je nemoguće, jer presjek sa {1, 2} ne može sadržati 3."]);
   });
   $("#sx-go").onclick = solveX;
   $("#sx-ex").onclick = () => { $("#sx-S").value = "2, 3, 4, 5"; $("#sx-cond").value = "{1, 2, 3} ∩ X = {2, 3}"; solveX(); };
@@ -1419,7 +1469,9 @@ function skupoviRender() {
       const R = IV.op([A, B], f);
       h += `<div class="ivres"><div class="mono"><b>${name}</b> = ${IV.str(R)}</div>${IV.svg([{ set: A, color: "#e5484d", label: "A" }, { set: B, color: "#3e63dd", label: "B" }, { set: R, color: "#30a46c", label: name.length > 3 ? "∗" : name }], [A, B])}</div>`;
     });
-    return h + `<p class="hint">Zeleno (∗) = traženi skup. Puni kružić = kraj pripada skupu [ ], prazan = ne pripada ( ).</p>`;
+    const special = ops.map(([name, f]) => [name, IV.op([A, B], f)]).filter(([, R]) => !R.length || (R.length === 1 && R[0].a === -Infinity && R[0].b === Infinity));
+    if (special.length) h += outcomeBox(special.map(([n, R]) => `${n} = ${R.length ? "ℝ" : "∅"}`).join(", ") + ". I ∅ i ℝ su ispravni rezultati.");
+    return h + `<p class="hint">Zeleno (∗) = traženi skup. Puni kružić = kraj pripada skupu [ ], prazan = ne pripada ( ).</p>` + insightBox(["Komplement intervala mijenja vrstu zagrade: (−1, 3)ᶜ = (−∞, −1] ∪ [3, +∞).", "Ako se A i B ne preklapaju, onda je A ∩ B = ∅ i A \\ B = A, bez crtanja.", "De Morgan: (A ∪ B)ᶜ = Aᶜ ∩ Bᶜ. Kad imaš jedan, drugi samo prepišeš."]);
   });
   $("#iv-go").onclick = ivSolve;
   $$("#tab-skupovi .ex[data-a]").forEach(b => b.onclick = () => { $("#iv-A").value = b.dataset.a; $("#iv-B").value = b.dataset.b; ivSolve(); });
@@ -1429,7 +1481,8 @@ function skupoviRender() {
     lastIq = IV.str(set).replace("ℝ = ", "");
     notify("Ovo je numerička provjera (posmatra se interval [−200, 200]); postupak rješavanja piši ručno.", "warn");
     if (approx) notify("Neke granice nisu lijepi razlomci – prikazane su približno (4 decimale).", "warn");
-    return `<div class="verdict ok mono">x ∈ ${IV.str(set)}</div>${IV.svg([{ set, color: "#30a46c", label: "x" }], [set])}`;
+    const full = set.length === 1 && set[0].a === -Infinity && set[0].b === Infinity;
+    return `<div class="verdict ok mono">x ∈ ${IV.str(set)}</div>${IV.svg([{ set, color: "#30a46c", label: "x" }], [set])}` + (!set.length ? outcomeBox("nejednačina nema rješenja: skup rješenja je ∅ (npr. kao |x| < −1).") : full ? outcomeBox("svaki realan broj je rješenje: skup rješenja je ℝ (npr. kao x² + 1 > 0).") : set.every(I => IV.cmp(I.a, I.b) === 0) ? outcomeBox("rješenje su samo izolovane tačke, a ne interval.") : "");
   });
   $("#iq-toA").onclick = () => { if (lastIq) $("#iv-A").value = lastIq.replace(/\+∞/g, "+inf").replace(/−∞/g, "-inf").replace(/−/g, "-"); else notify("Prvo riješi nejednačinu."); };
   $("#iq-toB").onclick = () => { if (lastIq) $("#iv-B").value = lastIq.replace(/\+∞/g, "+inf").replace(/−∞/g, "-inf").replace(/−/g, "-"); else notify("Prvo riješi nejednačinu."); };
@@ -1459,16 +1512,16 @@ function skupoviRender() {
       h += `<li>U presjeku: <b>${ab}</b>. Samo ${n1}: ${a} − ${ab} = <b>${R.a}</b>; samo ${n2}: ${b} − ${ab} = <b>${R.b}</b>.</li>`;
     }
     const parts = three ? [R.a, R.b, R.c, R.ab, R.ac, R.bc, R.abc] : [R.a, R.b, R.ab];
-    if (parts.some(x => x < 0)) throw new MathErr("Podaci su kontradiktorni – neki dio dijagrama ispada negativan. Provjeri brojeve (ili opciju „samo ta dva“).");
+    if (parts.some(x => x < 0)) return h + `</ol><div class="verdict no">Takva situacija nije moguća: neki dio dijagrama ispada negativan (${parts.filter(x => x < 0).join(", ")}).</div>` + outcomeBox("podaci su protivrječni, pa zadatak nema rješenja. Ako nisi pogriješio pri unosu, to je odgovor. Provjeri i opciju „samo ta dva“: ako je ona namjera zadatka, rezultat se mijenja.");
     const union = parts.reduce((s, x) => s + x, 0);
     R.none = tot === null ? null : tot - union;
-    if (R.none !== null && R.none < 0) throw new MathErr(`Ukupno (${tot}) je manje od broja elemenata u uniji (${union}) – podaci su kontradiktorni.`);
+    if (R.none !== null && R.none < 0) return h + `</ol><div class="verdict no">Takva situacija nije moguća: u uniji je ${union} elemenata, a ukupno ih je samo ${tot}.</div>` + outcomeBox("podaci su protivrječni (dio „ni u jednom“ bi bio negativan), pa zadatak nema rješenja.");
     const one = three ? R.a + R.b + R.c : R.a + R.b, two = three ? R.ab + R.ac + R.bc : R.ab;
     h += `<li>U uniji (bar jedan): ${parts.join(" + ")} = <b>${union}</b>.</li>`;
     h += `</ol>${vennSvg([n1, n2, n3], R, three)}`;
     h += `<table class="res"><tr><td>Ukupno u uniji (bar jedno)</td><td><b>${union}</b></td></tr><tr><td>Tačno jedno (samo jedan skup)</td><td><b>${one}</b></td></tr><tr><td>Tačno dva</td><td><b>${two}</b></td></tr>${three ? `<tr><td>Sva tri</td><td><b>${R.abc}</b></td></tr>` : ""}${R.none !== null ? `<tr><td>Ni u jednom (${tot} − ${union})</td><td><b>${R.none}</b></td></tr>` : ""}</table>`;
     if (three && !only) h += `<p class="hint">Provjera formulom: ${a}+${b}+${c} − ${ab} − ${ac} − ${bc} + ${abc} = ${a + b + c - ab - ac - bc + abc}.</p>`;
-    return h;
+    return h + insightBox(["Uvijek kreni od sredine (presjek sva tri), pa parovi, pa „samo jedan“. Tako se ništa ne broji dva puta.", "Brza provjera smislenosti: svaki dio dijagrama mora biti ≥ 0, presjek ne može biti veći od skupa, a unija ne može biti veća od ukupnog broja. Ako nešto od toga ne važi, situacija je nemoguća i to je odgovor."]);
   });
   $("#vn-go").onclick = vnSolve;
   $$("#tab-skupovi .ex[data-v]").forEach(btn => btn.onclick = () => {
@@ -1653,7 +1706,14 @@ function relacijaSolve() {
     }
   }
   let h = `<div class="step">A = ${esc(setStr(A))}${ruleTxt ? `, &nbsp; xρy ⇔ <span class="mono">${esc(ruleTxt)}</span>` : ""}</div>`;
-  if (!R.length) { notify("Relacija je prazan skup – po definiciji sa vježbi binarna relacija mora biti neprazna.", "warn"); return h + `<div class="verdict no">ρ = ∅ (nijedan par ne zadovoljava pravilo).</div>`; }
+  if (!R.length) {
+    h += `<div class="step">Nijedan par (x, y) ∈ A × A ne zadovoljava pravilo, pa je <b>ρ = ∅</b>.</div>`;
+    h += `<table class="props"><tr class="no"><td><b>Refleksivnost</b></td><td>✖ NE</td><td>npr. (${esc(A[0])}, ${esc(A[0])}) ∉ ρ</td></tr>
+      <tr class="yes"><td><b>Simetričnost</b></td><td>✔ DA</td><td>uslov „ako xρy, onda yρx“ je tačan jer pretpostavka nikad nije ispunjena</td></tr>
+      <tr class="yes"><td><b>Antisimetričnost</b></td><td>✔ DA</td><td>isto: nema nijednog para, pa nema ni kontraprimjera</td></tr>
+      <tr class="yes"><td><b>Tranzitivnost</b></td><td>✔ DA</td><td>isto: nema lanca xρy ∧ yρz</td></tr></table>`;
+    return h + outcomeBox("relacija je prazna. Napomena: po definiciji sa predavanja binarna relacija je <i>neprazan</i> podskup od A², pa ovakvo pravilo formalno ne zadaje relaciju. Ako zadatak ipak pita za svojstva, ovo su odgovori.") + insightBox(["Uslov oblika „ako … onda …“ je tačan kad pretpostavka nikad nije ispunjena (iz netačnog slijedi bilo šta). Zato prazna relacija ima S, AS i T, ali nema R."]);
+  }
   h += `<div class="step"><b>Očigledno je</b> ρ = {${R.map(pairStr).join(", ")}} &nbsp; (${R.length} parova)</div>`;
   const P = REL.props(A, R);
   const name = { R: "Refleksivnost", S: "Simetričnost", AS: "Antisimetričnost", T: "Tranzitivnost" };
@@ -1680,6 +1740,12 @@ function relacijaSolve() {
       }
     }
   }
+  h += insightBox([
+    "Iz matrice jednim pogledom: R ⇔ na dijagonali su sve jedinice; S ⇔ matrica je simetrična oko dijagonale; AS ⇔ van dijagonale nikad nisu jedinice na oba simetrična mjesta.",
+    P.S.ok && P.AS.ok ? "Ova relacija je i simetrična i antisimetrična. To je moguće samo kad su svi parovi oblika (x, x): S i AS nisu suprotnosti." : !P.S.ok && !P.AS.ok ? "Ova relacija nije ni simetrična ni antisimetrična. „Nije S“ ne znači „jeste AS“: to nisu suprotnosti." : "",
+    !P.T.ok ? "Za „NE“ je dovoljan jedan kontraprimjer (jedan lanac koji ne radi). Za „DA“ treba pokazati da važi za sve." : "",
+    eqv ? "Klase ekvivalencije se vide odmah ako relaciju zapišeš kao f(x) = f(y): klase su skupovi elemenata sa istom vrijednošću f (ovdje su to grupisani blokovi u matrici)." : "",
+  ]);
   h += `<div class="grid2 vis"><div><h4>Matrica (tablica) relacije${cls ? " – složena po klasama" : ""}</h4>${REL.matrix(A, R, null)}${cls ? REL.matrix(A, R, cls) : ""}<p class="hint">${cls ? "Grupisane jedinice (obojeni blokovi) daju klase. " : ""}Refleksivna ⇔ dijagonala sve 1; simetrična ⇔ tablica simetrična oko dijagonale.</p></div><div><h4>Graf relacije</h4>${A.length <= 12 ? REL.graph(A, R) : "<p class='hint'>Graf se crta za najviše 12 elemenata.</p>"}</div></div>`;
   return h;
 }
@@ -1695,11 +1761,17 @@ function relacijaKonstruisi() {
     const P = REL.props(A, R);
     if (Object.entries(want).every(([k, w]) => w === "any" || (w === "yes") === P[k].ok)) found.push(R);
   }
-  if (!found.length) return `<div class="verdict no">✖ Na ovom skupu ne postoji (neprazna) relacija sa traženim svojstvima.</div>`;
+  if (!found.length) {
+    let why = "";
+    if (want.R === "yes" && want.S === "yes" && want.AS === "yes" && want.T === "no") why = "R, S i AS zajedno ostavljaju samo dijagonalu {(x, x)}, a ona je uvijek tranzitivna.";
+    else if (want.R === "yes" && want.S === "yes" && want.AS === "yes") why = "R, S i AS zajedno daju tačno jednu relaciju, dijagonalu {(x, x)}.";
+    else if (A.length === 1) why = `Na skupu sa jednim elementom postoji samo relacija {(${esc(A[0])}, ${esc(A[0])})}, a ona je i R i S i AS i T.`;
+    return `<div class="verdict ok">Takva relacija ne postoji.</div>${why ? `<div class="step">${why}</div>` : ""}` + outcomeBox(`provjerene su sve ${2 ** all.length - 1} neprazne relacije na ovom skupu i nijedna nema tražena svojstva. „Ne postoji“ je ispravan odgovor.`);
+  }
   found.sort((a, b) => a.length - b.length);
   // „ljepši“ primjer: najmanji koji sadrži bar jedan par x≠y
   const nice = found.find(R => R.some(([x, y]) => x !== y)) || found[0];
-  let h = `<div class="step">Pronađeno ukupno <b>${found.length}</b> takvih relacija. Primjeri:</div><ol class="steps">`;
+  let h = `<div class="step">Pronađeno ukupno <b>${found.length}</b> takvih relacija. Primjeri:</div>${found.length > 1 ? outcomeBox(`odgovor nije jedinstven: postoji ${found.length} takvih relacija, a zadatak traži bilo koju.`) : ""}<ol class="steps">`;
   const shown = [nice, ...found.filter(R => R !== nice).slice(0, 4)];
   shown.forEach(R => {
     const P = REL.props(A, R);
@@ -1738,7 +1810,7 @@ function analyzeFinite(X, Y, f, fname = "f") {
   const multi = X.filter(x => f.filter(p => p[0] === x).length > 1);
   if (noImg.length) { isMap = false; h += `<div class="step bad">✖ ${fname} nije preslikavanje jer ${noImg.join(", ")} ∈ X ${noImg.length > 1 ? "nisu" : "nije"} u relaciji ni sa jednim elementom y ∈ Y.</div>`; }
   if (multi.length) { isMap = false; const x = multi[0]; h += `<div class="step bad">✖ ${fname} nije preslikavanje jer ${f.filter(p => p[0] === x).map(pairStr).join(", ")} ∈ ${fname} – elementu ${x} su pridružene različite vrijednosti.</div>`; }
-  if (!isMap) return { h, isMap };
+  if (!isMap) return { h: h + insightBox(["Za „nije preslikavanje“ dovoljan je jedan element bez slike ili jedan element sa dvije slike."]), isMap };
   h += `<div class="step">✔ ${fname} jeste preslikavanje: (∀x ∈ X)(∃!y ∈ Y) (x, y) ∈ ${fname}.</div>`;
   const img = x => f.find(p => p[0] === x)[1];
   let inj = true, injWhy = "";
@@ -1750,6 +1822,10 @@ function analyzeFinite(X, Y, f, fname = "f") {
   h += `<tr class="${inj && surj ? "yes" : "no"}"><td><b>Bijektivno</b></td><td>${inj && surj ? "✔ DA" : "✖ NE"}</td><td>${inj && surj ? "injekcija i sirjekcija" : "nije istovremeno injekcija i sirjekcija"}</td></tr></table>`;
   if (inj && surj) h += `<div class="verdict ok">${fname}⁻¹ = {${f.map(([x, y]) => `(${y}, ${x})`).join(", ")}} &nbsp; (okrenemo parove)</div>`;
   h += `<div class="step mono">${fname}(X) = ${esc(setStr(sortElems([...new Set(X.map(img))])))}</div>`;
+  h += insightBox([
+    X.length > Y.length ? `|X| = ${X.length} > |Y| = ${Y.length}: preslikavanje <b>ne može</b> biti injekcija (Dirihleov princip). To se vidi bez gledanja parova.` : X.length < Y.length ? `|X| = ${X.length} < |Y| = ${Y.length}: preslikavanje <b>ne može</b> biti sirjekcija. Nema dovoljno originala.` : `|X| = |Y| = ${X.length}: kod konačnih skupova iste veličine injekcija ⇔ sirjekcija ⇔ bijekcija. Dovoljno je provjeriti jedno.`,
+    "Za „NE“ je dovoljan jedan kontraprimjer: dva elementa sa istom slikom (nije 1-1) ili jedan element iz Y bez originala (nije „na“).",
+  ]);
   return { h, isMap, inj, surj, img };
 }
 
@@ -1947,7 +2023,7 @@ function realnaAnaliza(src) {
     h += `<div class="step">f: ℝ → ℝ je konstantna funkcija.</div>`;
     h += `<div class="step bad"><b>NIJE injektivna.</b> Zašto? (∃ x₁ = 1, x₂ = 2 ∈ ℝ, 1 ≠ 2): f(1) = ${fmt(c)} i f(2) = ${fmt(c)} ⇒ f(1) = f(2). Mogli smo uzeti i bilo koja druga dva realna broja.</div>`;
     h += `<div class="step bad"><b>NIJE sirjektivna</b> na ℝ: npr. y = ${fmt(c.add(1))} nema original (f uzima samo vrijednost ${fmt(c)}).</div>`;
-    return h + `<div class="verdict no">Nije bijekcija ⇒ nema inverznu funkciju.</div>`;
+    return h + `<div class="verdict no">Nije bijekcija ⇒ nema inverznu funkciju.</div>` + outcomeBox("inverz ne postoji. To je ispravan odgovor, a ne nedostatak rješenja.") + insightBox(["Konstantna funkcija „slika“ cijelo ℝ u jednu tačku, pa ne može biti ni 1-1 ni „na“ ℝ. Vidi se bez računa."]);
   }
   if (D.deg() === 0 && N.deg() === 1) { // linearna
     const a = N.co(1), b = N.co(0);
@@ -1955,7 +2031,7 @@ function realnaAnaliza(src) {
     h += `<div class="step"><b>Injektivnost.</b> Neka su x₁, x₂ ∈ ℝ takvi da važi f(x₁) = f(x₂):<br><span class="mono">${ax("x₁")} = ${ax("x₂")}</span>${b.isZero() ? "" : `<br><span class="mono">${new Poly([0, a]).toString("x₁")} = ${new Poly([0, a]).toString("x₂")}</span> &nbsp; (oduzmemo ${fmt(b)})`}<br><span class="mono">x₁ = x₂</span> &nbsp; (podijelimo sa ${fmt(a)})<br>Dakle (∀x₁, x₂ ∈ ℝ) f(x₁) = f(x₂) ⇒ x₁ = x₂ ⇒ f <b>JESTE injektivna</b>.</div>`;
     const inv = new Poly([b.neg().div(a), Frac.of(1).div(a)]);
     h += `<div class="step"><b>Sirjektivnost.</b> Neka je y ∈ ℝ proizvoljan. Iz y = ${ax("x")} slijedi x = ${esc(new Rat(inv).toNice("y"))} ∈ ℝ i f(x) = y ⇒ f <b>JESTE sirjektivna</b>.</div>`;
-    return h + `<div class="verdict ok">✔ f je bijekcija ℝ → ℝ, pa postoji inverz: &nbsp; <span class="mono">f⁻¹(x) = ${esc(new Rat(inv).toNice("x"))}</span></div>` + plotPair(F, x => inv.eval(Frac.parse(x.toFixed(6))).toNumber());
+    return h + `<div class="verdict ok">✔ f je bijekcija ℝ → ℝ, pa postoji inverz: &nbsp; <span class="mono">f⁻¹(x) = ${esc(new Rat(inv).toNice("x"))}</span></div>` + insightBox(["Svaka linearna funkcija ax + b sa a ≠ 0 je bijekcija ℝ → ℝ. Inverz „poništava“ korake obrnutim redom: f radi ·a pa +b, a f⁻¹ radi −b pa :a."]) + plotPair(F, x => inv.eval(Frac.parse(x.toFixed(6))).toNumber());
   }
   if (D.deg() === 0 && N.deg() === 2) { // kvadratna
     const a = N.co(2), b = N.co(1), c = N.co(0);
@@ -1964,7 +2040,7 @@ function realnaAnaliza(src) {
     h += `<div class="step bad"><b>NIJE injektivna.</b> Zašto? (∃ x₁ = ${fmt(x1)}, x₂ = ${fmt(x2)} ∈ ℝ, x₁ ≠ x₂): f(${fmt(x1)}) = ${fmt(N.eval(x1))} i f(${fmt(x2)}) = ${fmt(N.eval(x2))} ⇒ f(x₁) = f(x₂). (Tačke simetrične oko tjemena x = ${fmt(hv)}.)</div>`;
     h += `<div class="step bad"><b>NIJE sirjektivna</b> na ℝ: tjeme je T(${fmt(hv)}, ${fmt(kv)}), pa f(x) ${a.sign() > 0 ? "≥" : "≤"} ${fmt(kv)} za svako x; npr. y = ${fmt(a.sign() > 0 ? kv.sub(1) : kv.add(1))} nema original.</div>`;
     const ainv = Frac.of(1).div(a);
-    h += `<div class="verdict no">Na ℝ → ℝ nije bijekcija ⇒ nema inverz.</div>`;
+    h += `<div class="verdict no">Na ℝ → ℝ nije bijekcija ⇒ nema inverz.</div>` + outcomeBox("na ℝ inverz ne postoji. Postoji samo ako se domen suzi na jednu „granu“ parabole (vidi ispod), pa odgovor zavisi od domena.") + insightBox(["Parabola nikad nije 1-1 na ℝ: tačke simetrične oko tjemena imaju istu vrijednost. Kontraprimjer se čita direktno iz tjemena."]);
     h += `<details class="explain" open><summary>Restrikcija koja jeste bijekcija</summary><p>Svođenjem na potpun kvadrat: y = ${a.eq(1) ? "" : a.eq(-1) ? "−" : fmt(a)}${hv.isZero() ? "x²" : `(x ${hv.sign() > 0 ? "−" : "+"} ${fmt(hv.abs())})²`}${kv.isZero() ? "" : ` ${kv.sign() > 0 ? "+" : "−"} ${fmt(kv.abs())}`}.<br>f: [${fmt(hv)}, +∞) → ${a.sign() > 0 ? `[${fmt(kv)}, +∞)` : `(−∞, ${fmt(kv)}]`} je bijekcija, a inverz je<br><span class="mono">f⁻¹(x) = ${hv.isZero() ? "" : fmt(hv) + " + "}√(${a.sign() > 0 ? (kv.isZero() ? "x" : `(x ${kv.sign() > 0 ? "−" : "+"} ${fmt(kv.abs())})`) : (kv.isZero() ? "−x" : `(${fmt(kv)} − x)`)}${a.abs().eq(1) ? "" : ` / ${fmt(a.abs())}`})</span> &nbsp; (za lijevu granu (−∞, ${fmt(hv)}] ispred korijena ide znak −).</p></details>`;
     return h;
   }
@@ -1979,13 +2055,13 @@ function realnaAnaliza(src) {
     const xs = d.neg().div(c), ys = a.div(c);
     const two = (c1, v1, c2, v2) => { const t = (c, v, first) => { if (c.isZero()) return ""; const s = c.abs().eq(1) ? v : c.abs() + v; return first ? (c.sign() < 0 ? "−" : "") + s : (c.sign() < 0 ? " − " : " + ") + s; }; const a1 = t(c1, v1, true); return (a1 + t(c2, v2, !a1)) || "0"; };
     h += `<div class="step">Domen: c·x + d ≠ 0 ⇒ x ≠ ${fmt(xs)}, &nbsp; f: ℝ \\ {${fmt(xs)}} → ℝ \\ {${fmt(ys)}}.</div>`;
-    if (det.isZero()) return h + `<div class="verdict no">ad − bc = 0 ⇒ funkcija je konstantna na domenu, nije injektivna.</div>`;
+    if (det.isZero()) return h + `<div class="verdict no">ad − bc = 0 ⇒ funkcija je konstantna na domenu, nije injektivna.</div>` + outcomeBox("inverz ne postoji: brojilac i imenilac se skrate, pa je f zapravo konstanta (sa „rupom“ u tački gdje je imenilac 0).");
     h += `<div class="step"><b>Injektivnost.</b> Neka je f(x₁) = f(x₂):<br><span class="mono">(${numS("x₁")}) / (${denS("x₁")}) = (${numS("x₂")}) / (${denS("x₂")})</span><br><span class="mono">(${numS("x₁")})(${denS("x₂")}) = (${numS("x₂")})(${denS("x₁")})</span><br>Nakon množenja, članovi ${fmt(a.mul(c))}x₁x₂ i ${fmt(b.mul(d))} se skrate:<br><span class="mono">${two(a.mul(d), "x₁", b.mul(c), "x₂")} = ${two(a.mul(d), "x₂", b.mul(c), "x₁")}</span><br><span class="mono">${fmt(det)}(x₁ − x₂) = 0 ⇒ x₁ = x₂</span> &nbsp; (jer je ad − bc = ${fmt(det)} ≠ 0)<br>⇒ f <b>JESTE injektivna</b>.</div>`;
     // y = (ax+b)/(cx+d) -> x = (dy - b)/(a - c y)
     const invN = p(d, b.neg()), invD = p(c.neg(), a);
     const inv = new Rat(invN, invD);
     h += `<div class="step"><b>Sirjektivnost.</b> Neka je y ∈ ℝ \\ {${fmt(ys)}}. Rješavamo y = f(x):<br><span class="mono">y(${denS("x")}) = ${numS("x")}</span><br><span class="mono">x(${new Poly([a.neg(), c]).toString("y")}) = ${new Poly([b, d.neg()]).toString("y")}</span><br><span class="mono">x = ${esc(inv.toString("y"))}</span>, što je definisano jer je y ≠ ${fmt(ys)}; i x ≠ ${fmt(xs)} (inače bi bilo ad − bc = 0) ⇒ f <b>JESTE sirjektivna</b>.</div>`;
-    return h + `<div class="verdict ok">✔ f je bijekcija, pa je &nbsp; <span class="mono">f⁻¹(x) = ${esc(inv.toString("x"))}</span>, &nbsp; f⁻¹: ℝ \\ {${fmt(ys)}} → ℝ \\ {${fmt(xs)}}</div>` + plotPair(F, x => { try { return inv.eval(Frac.parse(x.toFixed(6))).toNumber(); } catch { return NaN; } }, [xs.toNumber()], [ys.toNumber()]);
+    return h + `<div class="verdict ok">✔ f je bijekcija, pa je &nbsp; <span class="mono">f⁻¹(x) = ${esc(inv.toString("x"))}</span>, &nbsp; f⁻¹: ℝ \\ {${fmt(ys)}} → ℝ \\ {${fmt(xs)}}</div>` + insightBox([`Inverz od (ax + b)/(cx + d) se piše odmah: zamijene se mjesta a i d i promijene znaci b i c, pa je f⁻¹(x) = (dx − b)/(−cx + a).`, `Vrijednost a/c = ${fmt(ys)} f nikad ne dostiže (horizontalna asimptota). Zato je kodomen ℝ \\ {${fmt(ys)}}, a ne ℝ.`]) + plotPair(F, x => { try { return inv.eval(Frac.parse(x.toFixed(6))).toNumber(); } catch { return NaN; } }, [xs.toNumber()], [ys.toNumber()]);
   }
   notify("Ovaj tip funkcije nije podržan za automatski postupak (podržane su konstantna, linearna, kvadratna i razlomljeno-linearna).", "warn");
   return h + `<div class="verdict no">Nije podržan tip funkcije – uradi postupak ručno: f(x₁) = f(x₂) ⇒ ?, y = f(x) ⇒ x = ?</div>`;
@@ -2028,7 +2104,7 @@ function smjena() {
   h += `<li>Dobijamo <span class="mono">x = ${esc(back.toString("t"))}</span>, pa je</li>`;
   h += `<li><span class="mono">f(t) = ${esc($("#fs-rhs").value.replace(/x/g, "(" + back.toString("t") + ")"))} = ${esc(f.toString("t"))}</span>, odnosno <b class="mono">f(x) = ${esc(f.toString("x"))}</b>.</li>`;
   h += `<li>Sada lako dobijamo traženo: <span class="mono">f(${esc(linStr(c, d))}) = ${esc(g.toString("x"))}</span>${g.isPoly() && g.num.deg() >= 2 ? ` = <span class="mono">${esc(g.toFactored("x"))}</span>` : ""}.</li></ol>`;
-  return h + `<div class="verdict ok mono">f(${esc(linStr(c, d))}) = ${esc(g.toString("x"))}</div>`;
+  return h + `<div class="verdict ok mono">f(${esc(linStr(c, d))}) = ${esc(g.toString("x"))}</div>` + insightBox([`Smjena samo kaže šta je „unutra“: ako je f(${esc(linStr(a, b))}) = …, onda je u f(x) svaki x zamijenjen sa ${esc(back.toString("x"))}. Kod f(x − 1) = x² odmah vidiš da je f(t) = (t + 1)².`]);
 }
 
 function piecewiseCheck(pcs, name) {
@@ -2078,6 +2154,7 @@ function piecewiseCompose() {
     if (last && last.A.eq(r.A) && last.B.eq(r.B) && IV.cmp(last.I.b, r.I.a) === 0 && (last.I.bc || r.I.ac)) { last.I = { a: last.I.a, ac: last.I.ac, b: r.I.b, bc: r.I.bc }; }
     else merged.push({ ...r, I: { ...r.I } });
   }
+  if (h.includes("∅ (otpada)")) h += insightBox(["Neke kombinacije dijelova otpadaju (presjek je ∅). To je normalno: vrijednosti f(x) iz jednog dijela često uopšte ne padaju u neki dio od g."]);
   h += `<div class="verdict ok"><div class="piece">(g∘f)(x) = </div><div class="brace">${merged.map(r => `<div><span class="mono">${esc(linStr(r.A, r.B))}</span>, &nbsp; ${esc(condStr(r.I))}</div>`).join("")}</div></div>`;
   return h;
 }
@@ -2183,8 +2260,8 @@ function indZbir() {
   if (n0 < i0) throw new MathErr("n mora biti ≥ i₀.");
   // provjera tačnosti
   for (let n = n0; n < n0 + 8; n++) if (!Ls(n).eq(D(n))) {
-    notify("Tvrđenje NIJE tačno – nađen kontraprimjer.", "err");
-    return `<div class="verdict no">✖ Tvrđenje nije tačno: za n = ${n} je L = ${fmtF(Ls(n))}, a D = ${fmtF(D(n))}. Provjeri unos (sabirak, prvi indeks, desnu stranu).</div>`;
+    const ok = []; for (let k = Math.max(n0, i0); k < Math.max(n0, i0) + 15; k++) if (Ls(k).eq(D(k))) ok.push(k);
+    return `<div class="verdict no">Tvrđenje NIJE tačno. Kontraprimjer: za n = ${n} je L = ${fmtF(Ls(n))}, a D = ${fmtF(D(n))}.</div>` + outcomeBox(ok.length ? `jednakost važi samo za n ∈ {${ok.join(", ")}} (provjereno do n = ${Math.max(n0, i0) + 14}), pa ne važi za sve n. Odgovor je kontraprimjer, a indukcija se ne radi.` : `jednakost ne važi ni za jedno provjereno n. Odgovor je kontraprimjer, a indukcija se ne radi.`) + insightBox(["Prije svakog dokaza provjeri n = 1, 2, 3. Ako jednakost tu ne važi, zadatak je zamka i odgovor je „nije tačno“ uz kontraprimjer."]);
   }
   const termK = astStr(substAst(aAst, "i", KV)), termK1raw = astStr(substAst(aAst, "i", K1));
   const k1Ast = substAst(aAst, "i", K1);
@@ -2208,7 +2285,7 @@ function indZbir() {
    Dalje je<div class="eq mono">D<sub>k+1</sub> = ${esc(dK1)}<br>&nbsp;= ${esc(Dk1.toNice("k"))}${Dk1.toFactored("k") !== Dk1.toNice("k") ? `<br>&nbsp;= ${esc(Dk1.toFactored("k"))}` : ""}</div></div>`;
   if (!Lk1.eq(Dk1)) throw new MathErr("Induktivni korak ne prolazi – provjeri unos.");
   h += `<div class="step">pa je očigledno L<sub>k+1</sub> = D<sub>k+1</sub>, što znači da je T(k+1) ⇔ ⊤. Ovim smo dokazali da T(k) ⇒ T(k+1).</div>`;
-  return h + `<div class="verdict ok">✔ Sada, prema Principu matematičke indukcije, dato tvrđenje je tačno za svaki prirodan broj n ≥ ${n0}.</div>`;
+  return h + `<div class="verdict ok">✔ Sada, prema Principu matematičke indukcije, dato tvrđenje je tačno za svaki prirodan broj n ≥ ${n0}.</div>` + insightBox(["Kod zbira je trik uvijek isti: L<sub>k+1</sub> = (zbir do k) + (k+1)-vi sabirak, a zbir do k zamijeniš hipotezom. Prije računanja zapiši cilj D<sub>k+1</sub>, pa znaš šta treba izvući kao faktor.", "Brza provjera formule bez dokaza: uvrsti n = 1, 2, 3. Na primjer, za 1² + … + n² = n(n+1)(2n+1)/6 i n = 2: 1 + 4 = 5 = 2·3·5/6 ✔."]);
 }
 
 // ---------- djeljivost ----------
@@ -2243,7 +2320,10 @@ function indDjeljivost() {
   const f = n => evalExact(ast, { n });
   for (let n = n0; n < n0 + 12; n++) {
     const v = f(n);
-    if (!v.isInt() || v.n % m !== 0n) { notify("Tvrđenje nije tačno.", "err"); return `<div class="verdict no">✖ Tvrđenje nije tačno: f(${n}) = ${fmtF(v)} nije djeljivo sa ${m}.</div>`; }
+    if (!v.isInt() || v.n % m !== 0n) {
+      const ok = []; for (let k = n0; k < n0 + 12; k++) { const w = f(k); if (w.isInt() && w.n % m === 0n) ok.push(k); }
+      return `<div class="verdict no">Tvrđenje NIJE tačno. Kontraprimjer: f(${n}) = ${fmtF(v)} nije djeljivo sa ${m}${v.isInt() ? ` (ostatak ${((v.n % m) + m) % m})` : ""}.</div>` + outcomeBox(ok.length ? `djeljivost važi samo za n ∈ {${ok.join(", ")}} (provjereno n = ${n0}…${n0 + 11}), a ne za sve n.` : "djeljivost ne važi ni za jedno provjereno n.") + insightBox(["Prije dokaza izračunaj f(1), f(2), f(3) i podijeli sa m. Ako ijedan nije djeljiv, odgovor je kontraprimjer."]);
+    }
   }
   const fb = f(n0);
   let h = `<div class="step">Neka je f<sub>n</sub> := ${esc(astStr(ast))}. Primijetimo da je<div class="eq mono">${m} | f<sub>n</sub> ⇔ ∃a<sub>n</sub> ∈ ℕ : f<sub>n</sub> = ${m}·a<sub>n</sub></div></div>`;
@@ -2268,6 +2348,7 @@ function indDjeljivost() {
         &nbsp;= ${m}·(${Aa}a<sub>k</sub>${sgnTerm(cm, yk, false)})<br>
         &nbsp;= ${m}·a<sub>k+1</sub></div>`;
       h += `<div class="step">što znači da je T(k+1) ⇔ ⊤. Ključni trik: f<sub>k+1</sub> smo izrazili kao ${Aa}·f<sub>k</sub> plus ostatak, a koeficijent ostatka ${c} je djeljiv sa ${m}${Y.konst ? "" : ` (${Y.s.eq(1) ? "" : Y.s.eq(-1) ? "−" : Y.s + "·"}${Y.s.eq(1) ? `${Bb} − ${Aa}` : `(${Bb} − ${Aa})`} = ${c})`}. Ovim smo dokazali da T(k) ⇒ T(k+1).</div>`;
+      h += insightBox([`Cijeli zadatak se „vidi“ iz jednog broja: ${Bb} − ${Aa} = ${Bb.sub(Aa)}${Bb.sub(Aa).n % m === 0n ? ` je djeljivo sa ${m}` : ""}, tj. ${Bb} ≡ ${Aa} (mod ${m}). Kad god se množi sa ${Bb}, to je za djeljivost sa ${m} isto kao množenje sa ${Aa}.`, "Uvijek izrazi f<sub>k+1</sub> preko f<sub>k</sub>: izvuci jedan zajednički faktor uz f<sub>k</sub>, a ostatak mora biti očigledno djeljiv."]);
       return h + `<div class="verdict ok">✔ Prema Principu matematičke indukcije, ${m} | f<sub>n</sub> za svaki prirodan broj n ≥ ${n0}.</div>`;
     }
     notify("Za ovaj izraz trik „f(k+1) = A·f(k) + (djeljivo)“ ne prolazi direktno – potreban je ručni postupak.", "warn");
@@ -2307,7 +2388,12 @@ function indNejednakost() {
   const n0 = intIn("#in-n0", "Početni n");
   const L = n => evalExact(lAst, { n }), D = n => evalExact(dAst, { n });
   const holds = n => strict ? L(n).cmp(D(n)) > 0 : L(n).cmp(D(n)) >= 0;
-  for (let n = n0; n < n0 + 30; n++) if (!holds(n)) { notify("Nejednakost nije tačna.", "err"); return `<div class="verdict no">✖ Za n = ${n}: L = ${fmtF(L(n))}, D = ${fmtF(D(n))} – nejednakost ne važi.</div>`; }
+  const okSet = []; for (let n = 1; n <= 40; n++) { try { if (holds(n)) okSet.push(n); } catch { } }
+  let thr = null; for (let m = 1; m <= 40; m++) { let all = true; for (let n = m; n <= 60; n++) { try { if (!holds(n)) { all = false; break; } } catch { all = false; break; } } if (all) { thr = m; break; } }
+  const descr = () => { const pre = thr ? okSet.filter(n => n < thr) : okSet; return (pre.length ? `n ∈ {${pre.join(", ")}}${thr ? " i " : ""}` : "") + (thr ? `svako n ≥ ${thr}` : "") || "nijedno provjereno n"; };
+  for (let n = n0; n < n0 + 30; n++) if (!holds(n)) {
+    return `<div class="verdict no">Za n ≥ ${n0} tvrđenje NIJE tačno. Kontraprimjer: za n = ${n} je L = ${fmtF(L(n))}, D = ${fmtF(D(n))}.</div>` + outcomeBox(`nejednakost važi za ${descr()} (provjereno do n = 60).${thr && thr > n0 ? ` Indukcija bi se mogla raditi tek od n = ${thr}.` : ""}`) + insightBox(["Tvrđenje može važiti za mala n, pa prestati, ili početi da važi tek od nekog n. Zato uvijek napravi malu tablicu za n = 1, …, 6 prije dokaza."]);
+  }
   const ls = astStr(lAst), ds = astStr(dAst);
   let h = `<div class="step"><b>T(n):</b> <span class="mono">${esc(ls)} ${op} ${esc(ds)}</span>, n ≥ ${n0}</div>`;
   h += `<div class="step"><b>(I) Provjerimo da li je T(${n0}) ⇔ ⊤.</b> L<sub>${n0}</sub> = ${esc(astStr(substAst(lAst, "n", { t: "num", v: Frac.of(n0) })))} = ${fmtF(L(n0))}, D<sub>${n0}</sub> = ${esc(astStr(substAst(dAst, "n", { t: "num", v: Frac.of(n0) })))} = ${fmtF(D(n0))}, pa je očigledno L<sub>${n0}</sub> ${op} D<sub>${n0}</sub> ⇒ T(${n0}) ⇔ ⊤.${n0 > 1 ? ` (Za manje n tvrđenje ne mora da važi – zato baza počinje od ${n0}.)` : ""}</div>`;
@@ -2339,7 +2425,8 @@ function indNejednakost() {
     h += `<div class="eq mono">L<sub>k+1</sub> = ${esc(astStr(substAst(lAst, "n", K1)))}<br>&nbsp;= ${esc(Lp.toString("k"))} + (${esc(dL.toString("k"))})<br>&nbsp;${op}<sup>(H)</sup> (${esc(Dp.toString("k"))}) + (${esc(dL.toString("k"))})<br>&nbsp;= ${esc(Dk1.toString("k"))} + (${esc(Hh.toString("k"))})<br>&nbsp;≥ ${esc(Dk1.toString("k"))} = D<sub>k+1</sub></div>`;
     h += `<div class="step">Koristili smo da je <span class="mono">${esc(Hh.toString("k"))} ≥ 0</span> za k ≥ ${n0}. Dakle L<sub>k+1</sub> ${op} D<sub>k+1</sub> ⇒ T(k+1) ⇔ ⊤.</div>`;
   }
-  return h + `<div class="verdict ok">✔ Prema Principu matematičke indukcije, tvrđenje je tačno za svaki prirodan broj n ≥ ${n0}.</div>`;
+  const smallBad = okSet.length ? Array.from({ length: n0 - 1 }, (_, i) => i + 1).filter(n => !okSet.includes(n)) : [];
+  return h + `<div class="verdict ok">✔ Prema Principu matematičke indukcije, tvrđenje je tačno za svaki prirodan broj n ≥ ${n0}.</div>` + (n0 > 1 || (thr && thr < n0) ? outcomeBox(`tačan skup n za koje nejednakost važi: ${descr()}.${smallBad.length ? ` Za n ∈ {${smallBad.join(", ")}} ne važi, zato baza ne može početi ranije.` : ""}${thr && thr < n0 ? ` Nejednakost važi već od n = ${thr}, pa je i baza n = ${thr} mogla.` : ""}`) : "") + insightBox(["Mala tablica (n = 1, …, 6) odmah pokazuje od kog n tvrđenje važi. Tako se zna gdje je baza.", "U koraku je cilj uvijek isti: L<sub>k+1</sub> napiši preko L<sub>k</sub>, iskoristi (H), pa pokaži da je „višak“ ≥ 0 za k ≥ baza."]);
 }
 
 // ===================== JEZGRO ZA KOMPLEKSNE BROJEVE =====================
@@ -2723,33 +2810,56 @@ const CPC = { z: "var(--fk-h,#1d5fae)", w: "var(--fk-f,#bb3a2b)", r: "var(--fk-p
 // ---------- „Vidi odmah“ – trening brzog razmišljanja ----------
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-function drillCard(id, title, lead, gens) {
+function drillCard(id, title, lead) {
   return `<section class="card drill" id="${id}">
     <h2>⚡ ${title}</h2>
     <p class="lead">${lead}</p>
     <div class="drill-q" id="${id}-q"></div>
-    <label for="${id}-in">Tvoj odgovor</label>
-    <input id="${id}-in" class="mono" type="text" autocomplete="off" spellcheck="false" placeholder="npr. −1, 2i, 3 − 4i, √3/2 + 1/2 i, 2π/3">
+    <div class="drill-opts" id="${id}-opts"></div>
+    <div class="drill-inwrap" id="${id}-inwrap"><label for="${id}-in">Tvoj odgovor</label>
+    <input id="${id}-in" class="mono" type="text" autocomplete="off" spellcheck="false"></div>
     <div class="btns"><button class="primary" id="${id}-ok">Provjeri</button><button id="${id}-next">Sljedeće →</button><button id="${id}-show">Pokaži rješenje</button><span class="drill-score" id="${id}-score"></span></div>
     <div class="out" id="${id}-out"></div>
   </section>`;
 }
+const DRILL_PH = {
+  ang: "ugao, npr. 2π/3 ili −π/4", r: "broj, npr. 5, −3 ili 2√2", c: "npr. −1, 2i, 3 − 4i, −√3/2 + 1/2 i",
+  set: "skup, npr. {1, 3} ili ∅", iv: "npr. (−1, 3], [2, +inf), ∅ ili R", fx: "izraz po x, npr. (x − 6)/2",
+};
+// normalizovan zapis konačnog skupa
+function setKey(v) {
+  const t = String(v).trim();
+  if (/^(∅|\{\s*\}|prazan( skup)?)$/i.test(t)) return "";
+  return sortElems(parseList(t).map(x => x.replace(/−/g, "-")).map(x => (isNaN(Number(x)) ? x : String(Number(x))))).join(",");
+}
+function ivKey(v) {
+  const t = String(v).trim().replace(/−/g, "-").replace(/∞/g, "inf");
+  if (/^(∅|\{\s*\}|prazan( skup)?)$/i.test(t)) return "∅";
+  if (/^(ℝ|R|\(-inf,\s*\+?inf\))$/.test(t)) return IV.str([{ a: -Infinity, ac: false, b: Infinity, bc: false }]);
+  return IV.str(IV.parse(t));
+}
 function drillWire(id, gens) {
   let cur = null, t0 = 0, ok = 0, tot = 0, streak = 0, done = false;
-  const q = $(`#${id}-q`), inp = $(`#${id}-in`), out = $(`#${id}-out`), sc = $(`#${id}-score`);
+  const q = $(`#${id}-q`), inp = $(`#${id}-in`), out = $(`#${id}-out`), sc = $(`#${id}-score`), opts = $(`#${id}-opts`), inw = $(`#${id}-inwrap`), okb = $(`#${id}-ok`);
   const next = () => {
     cur = pick(gens)(); t0 = performance.now(); done = false;
-    q.innerHTML = `<div class="mono big">${cur.q}</div>${cur.hint ? `<div class="hint">${cur.hint}</div>` : ""}`;
+    q.innerHTML = `<div class="${cur.kind === "mc" ? "" : "mono "}big">${cur.q}</div>${cur.hint ? `<div class="hint">${cur.hint}</div>` : ""}`;
     inp.value = ""; out.classList.remove("show"); out.innerHTML = "";
-    inp.placeholder = cur.kind === "ang" ? "ugao, npr. 2π/3 ili −π/4" : cur.kind === "r" ? "realan broj, npr. 5 ili 2√2" : "npr. −1, 2i, 3 − 4i, −√3/2 + 1/2 i";
+    const mc = cur.kind === "mc";
+    inw.hidden = mc; okb.hidden = mc;
+    opts.innerHTML = mc ? cur.opts.map((o, k) => `<button type="button" class="opt" data-k="${k}">${o}</button>`).join("") : "";
+    if (!mc) inp.placeholder = DRILL_PH[cur.kind] || DRILL_PH.c;
   };
-  const reveal = (good, sec) => {
+  const reveal = (good, sec, chosen) => {
     done = true;
+    if (cur.kind === "mc") $$(".opt", opts).forEach(b => { const k = +b.dataset.k; b.disabled = true; b.classList.toggle("right", k === cur.ans); b.classList.toggle("wrong", k === chosen && k !== cur.ans); });
     const sp = sec !== null ? ` &nbsp;·&nbsp; ${sec.toFixed(1)} s${good && sec <= 10 ? " ⚡" : ""}` : "";
-    out.innerHTML = `<div class="verdict ${good ? "ok" : "no"}">${good ? "✔ Tačno" : sec === null ? "Rješenje" : "✖ Nije tačno"}: <span class="mono">${cur.a}</span>${sp}</div><div class="insight"><b>💡 Kako se vidi odmah:</b> ${cur.why}</div>`;
+    const ans = cur.kind === "mc" ? cur.opts[cur.ans] : (cur.disp || cur.a);
+    out.innerHTML = `<div class="verdict ${good ? "ok" : "no"}">${good ? "✔ Tačno" : sec === null ? "Rješenje" : "✖ Nije tačno"}: <span class="mono">${ans}</span>${sp}</div><div class="insight"><b>💡 Kako se vidi odmah:</b> ${cur.why}</div>`;
     out.classList.add("show");
     sc.textContent = `${ok}/${tot} tačno · niz ${streak}`;
   };
+  const score = good => { tot++; if (good) { ok++; streak++; } else streak = 0; };
   const check = () => {
     if (!cur) return;
     if (done) { next(); return; }
@@ -2757,22 +2867,33 @@ function drillWire(id, gens) {
     if (!v) { notify("Upiši odgovor (ili klikni „Pokaži rješenje“)."); return; }
     let good = false;
     try {
-      if (cur.kind === "ang") {
-        const A = parseAngle(v); const d = (A.num - cur.val) / (2 * Math.PI);
-        good = Math.abs(d - Math.round(d)) < 1e-7;
+      if (cur.kind === "ang") { const A = parseAngle(v); const d = (A.num - cur.val) / (2 * Math.PI); good = Math.abs(d - Math.round(d)) < 1e-7; }
+      else if (cur.kind === "set") good = setKey(v) === setKey(cur.a);
+      else if (cur.kind === "iv") good = ivKey(v) === ivKey(cur.a);
+      else if (cur.kind === "fx") {
+        const U = parseExpr(v, ["x"]), E = parseExpr(cur.a.replace(/−/g, "-"), ["x"]);
+        good = [-2.3, -0.7, 0.4, 1.9, 3.1, 5.6].every(x => { const a = evalNum(U, { x }), b = evalNum(E, { x }); return (isNaN(a) && isNaN(b)) || Math.abs(a - b) < 1e-7 * Math.max(1, Math.abs(b)); });
       } else {
         const Z = parseZ(v); const [x, y] = Z.z ? Z.z.num() : [Z.rNum * Math.cos(Z.phiNum), Z.rNum * Math.sin(Z.phiNum)];
         good = Math.abs(x - cur.val[0]) < 1e-7 && Math.abs(y - cur.val[1]) < 1e-7;
       }
     } catch (e) { notify("Ne razumijem odgovor: " + e.message); return; }
-    tot++; if (good) { ok++; streak++; } else streak = 0;
-    reveal(good, (performance.now() - t0) / 1000);
+    score(good); reveal(good, (performance.now() - t0) / 1000);
   };
-  $(`#${id}-ok`).onclick = check;
+  okb.onclick = check;
   inp.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+  opts.addEventListener("click", e => {
+    const b = e.target.closest(".opt"); if (!b || done) return;
+    const k = +b.dataset.k, good = k === cur.ans; score(good); reveal(good, (performance.now() - t0) / 1000, k);
+  });
   $(`#${id}-next`).onclick = next;
   $(`#${id}-show`).onclick = () => { if (cur && !done) { tot++; streak = 0; reveal(false, null); } };
   next();
+}
+// mc pitanje: opcije se miješaju, ans = indeks tačne
+function mcQ(q, right, wrongs, why, hint) {
+  const all = [right, ...wrongs].map((t, k) => ({ t, k })).sort(() => Math.random() - .5);
+  return { kind: "mc", q, opts: all.map(o => o.t), ans: all.findIndex(o => o.k === 0), why, hint };
 }
 
 // ===================== KOMPLEKSNI BROJEVI (algebarski oblik) =====================
@@ -2882,6 +3003,9 @@ function kompleksniRender() {
       <button class="ex" data-e="(x + yi)(2 - i) = 7 + i">(x+yi)(2−i)</button>
       <button class="ex" data-e="z + 2conj(z) = 3 - i">z + 2z̄</button>
       <button class="ex" data-e="(1+i)z = 3 - i">(1+i)z</button>
+      <span class="ex-label">Zamke:</span>
+      <button class="ex" data-e="z = conj(z)">z = z̄</button>
+      <button class="ex" data-e="z + conj(z) = 2i">z + z̄ = 2i</button>
     </div>
     <div class="out" id="eq-out"></div>
   </section>
@@ -3022,8 +3146,26 @@ function kxEquation(src) {
   const a21 = A.cx.im.sub(B.cx.im), a22 = A.cy.im.sub(B.cy.im), b2 = B.c0.im.sub(A.c0.im);
   const det = a11.mul(a22).sub(a12.mul(a21));
   if (det.isZero()) {
-    notify("Sistem nema jedinstveno rješenje.", "warn");
-    return h + `<div class="verdict no">Determinanta sistema je 0 – sistem nema jedinstveno rješenje (ili nema rješenja, ili ih ima beskonačno mnogo).</div>`;
+    const eq1 = linS(a11, a12, new Sd()) + " = " + b1, eq2 = linS(a21, a22, new Sd()) + " = " + b2;
+    h += `<div class="step">Prebacimo poznate članove na desnu stranu:<div class="eq mono">{ ${esc(eq1)}<br>{ ${esc(eq2)}</div></div>`;
+    const zero1 = a11.isZero() && a12.isZero(), zero2 = a21.isZero() && a22.isZero();
+    const bad = (zero1 && !b1.isZero()) || (zero2 && !b2.isZero());
+    let consistent = !bad;
+    // obje jednačine istog oblika: provjeri proporcionalnost desnih strana
+    if (consistent && !zero1 && !zero2) {
+      const [p, q] = !a11.isZero() ? [a21.div(a11), b1.mul(a21.div(a11))] : [a22.div(a12), b1.mul(a22.div(a12))];
+      consistent = q.eq(b2);
+    }
+    const Z = usesZ ? "z" : "(x, y)";
+    if (!consistent) {
+      return h + `<div class="verdict ok">Jednačina nema rješenja: ${zero1 || zero2 ? `jedna jednačina glasi 0 = ${esc(zero1 ? b1 : b2)}, što je nemoguće` : "lijeve strane su proporcionalne, a desne nisu, pa se jednačine međusobno isključuju"}.</div>` + outcomeBox(`skup rješenja je ∅. Ne postoji ${usesZ ? "kompleksan broj z" : "par realnih brojeva (x, y)"} koji zadovoljava jednačinu.`) + insightBox(["Jedna jednačina u ℂ daje dvije realne. Kad je jedna od njih oblika 0 = (broj ≠ 0), ili se dvije međusobno isključuju, rješenja nema."]);
+    }
+    if (zero1 && zero2) return h + `<div class="verdict ok">Svaki ${usesZ ? "z ∈ ℂ" : "par (x, y) ∈ ℝ²"} je rješenje (jednačina se svodi na 0 = 0).</div>` + outcomeBox("beskonačno mnogo rješenja: jednačina je identitet.");
+    const [c1, c2, bb] = !zero1 ? [a11, a12, b1] : [a21, a22, b2];
+    let par;
+    if (!c2.isZero()) { const k = c1.neg().div(c2), m = bb.div(c2); par = `x = t, &nbsp; y = ${esc(linS(k, new Sd(), m).replace("x", "t"))}, &nbsp; t ∈ ℝ`; }
+    else par = `x = ${esc(bb.div(c1))}, &nbsp; y = t, &nbsp; t ∈ ℝ`;
+    return h + `<div class="verdict ok">Obje jednačine kažu isto: <span class="mono">${esc(linS(c1, c2, new Sd()))} = ${esc(bb)}</span>, pa rješenja ima beskonačno mnogo:<br><span class="mono">${par}</span>${usesZ ? "<br>(z = x + yi za svako takvo x, y)" : ""}</div>` + outcomeBox(`beskonačno mnogo rješenja (jedna prava u ravni). Odgovor je cijela familija rješenja, a ne jedan broj.${usesZ && c2.isZero() === false && c1.isZero() ? "" : ""}`) + insightBox(["Kad realni i imaginarni dio daju istu jednačinu (ili je jedan od njih 0 = 0), ostaje samo jedna jednačina sa dvije nepoznate. Takav sistem ima beskonačno mnogo rješenja. Npr. z = z̄ važi za svaki realan z."]);
   }
   const x = b1.mul(a22).sub(a12.mul(b2)).div(det), y = a11.mul(b2).sub(b1.mul(a21)).div(det);
   const eq1 = linS(a11, a12, new Sd()) + " = " + b1, eq2 = linS(a21, a22, new Sd()) + " = " + b2;
@@ -3354,16 +3496,201 @@ const TG_DRILL = [
   () => { const [z, n, w] = pick([["1 + i", 8, "φ = π/4, pa treba n·π/4 = 2π ⇒ n = 8."], ["√3 + i", 12, "φ = π/6, pa treba n·π/6 = 2π ⇒ n = 12."], ["−1 + √3i", 3, "φ = 2π/3, pa treba n·2π/3 = 2π ⇒ n = 3."], ["1 − i", 8, "φ = −π/4, pa treba n·π/4 = 2π ⇒ n = 8."], ["i", 4, "φ = π/2 ⇒ n = 4."], ["−√3 − i", 12, "φ = −5π/6. Prvi umnožak od 2π je 12·5π/6 = 10π ⇒ n = 12."]]); return { q: `Najmanje n ∈ ℕ za koje je (${z})ⁿ realan i pozitivan broj?`, val: [n, 0], a: String(n), kind: "r", why: `zⁿ je realan pozitivan kad je n·φ umnožak od 2π. ${w}` }; },
 ];
 
+// ===================== „VIDI ODMAH“ ZA SVE OBLASTI + „KAKAV SVE MOŽE BITI REZULTAT“ =====================
+"use strict";
+
+const OPT_TF = ["⊤ (tačno)", "⊥ (netačno)", "ne može se odrediti"];
+const yesNo = (q, yes, why, hint) => mcQ(q, yes ? "da" : "ne", [yes ? "ne" : "da"], why, hint);
+
+// ---------- LOGIKA ----------
+const LOG_FORMS = [
+  ["p ⇒ (q ⇒ p)", "Desna strana q ⇒ p je ⊥ samo za p = ⊥. Tada je lijeva strana p = ⊥, pa je cijela implikacija ⊤."],
+  ["(p ∧ ¬p) ⇒ q", "Lijeva strana p ∧ ¬p je uvijek ⊥, a iz netačnog slijedi bilo šta. Uvijek ⊤."],
+  ["p ∧ ¬p", "p i ¬p nikad nisu istovremeno tačni. Formula nije tačna ni u jednom redu."],
+  ["(p ⇒ q) ∧ p ∧ ¬q", "p ∧ ¬q traži p = ⊤ i q = ⊥, a tada je p ⇒ q = ⊥. Nikad tačno."],
+  ["p ⇒ q", "Za p = ⊤, q = ⊥ je ⊥, a za p = ⊥ je ⊤. Zavisi od p i q."],
+  ["(p ∨ q) ⇒ p", "Za p = ⊥, q = ⊤ dobijamo ⊤ ⇒ ⊥ = ⊥, a za p = ⊤ je ⊤. Zavisi od p i q."],
+  ["((p ∧ q) ⇒ r) ∨ ¬r", "Ako je r = ⊥, onda je ¬r = ⊤. Ako je r = ⊤, implikacija ima tačnu desnu stranu. U oba slučaja ⊤."],
+  ["(p ⇒ q) ⇔ (¬q ⇒ ¬p)", "To je zakon kontrapozicije: obje strane su isti iskaz zapisan na dva načina."],
+  ["(p ⇒ q) ⇔ (q ⇒ p)", "Implikacija i njen obrat nisu isto: za p = ⊤, q = ⊥ lijevo je ⊥, a desno ⊤."],
+  ["¬(p ∨ q) ⇔ (¬p ∧ ¬q)", "De Morganov zakon: obje strane kažu „ni p ni q“."],
+  ["((p ⇒ q) ∧ (q ⇒ r)) ⇒ (p ⇒ r)", "Tranzitivnost implikacije. Da bi bilo ⊥, treba p = ⊤ i r = ⊥, a tada p ⇒ q i q ⇒ r ne mogu oba biti ⊤."],
+  ["p ∨ (q ∧ ¬q)", "q ∧ ¬q je uvijek ⊥, pa je formula isto što i p. Zavisi od p."],
+  ["(p ⇔ q) ∧ (p ⇔ ¬q)", "q i ¬q ne mogu oba imati istu vrijednost kao p. Nikad tačno."],
+  ["(p ∧ q) ∨ ¬(p ⇒ q)", "¬(p ⇒ q) znači p = ⊤ i q = ⊥, a p ∧ q znači p = ⊤ i q = ⊤. Ukupno: tačno tačno kad je p = ⊤. Zavisi od p."],
+];
+const LOG_VALS = [
+  ["τ(p) = ⊥. Kolika je τ(p ⇒ ((q ∨ r) ∧ ¬s))?", 0, "Lijeva strana implikacije je ⊥, a iz netačnog slijedi sve. Ostatak ne treba ni gledati."],
+  ["τ(q) = ⊤. Kolika je τ((p ∧ r) ∨ s ⇒ q)?", 0, "Desna strana implikacije je ⊤, pa je implikacija ⊤ bez obzira na lijevu stranu."],
+  ["τ(p) = ⊥. Kolika je τ(p ∧ (q ⇒ r))?", 1, "U konjunkciji je jedan dio ⊥, pa je cijela ⊥."],
+  ["τ(p) = ⊤. Kolika je τ(p ∨ (q ⇔ ¬r))?", 0, "U disjunkciji je jedan dio ⊤, pa je cijela ⊤."],
+  ["τ(p) = ⊤. Kolika je τ(p ⇒ q)?", 2, "Za p = ⊤ vrijednost implikacije je ista kao vrijednost q. Bez q se ne može odrediti."],
+  ["τ(p) = ⊥. Kolika je τ(p ∨ q)?", 2, "Za p = ⊥ disjunkcija ima vrijednost q, a q nije zadat."],
+  ["τ(r) = ⊥. Kolika je τ((p ⇒ q) ∧ r)?", 1, "Jedan dio konjunkcije je ⊥, pa je cijela ⊥."],
+  ["τ(p) = ⊤, τ(q) = ⊥. Kolika je τ(¬p ⇒ (q ∧ r))?", 0, "¬p = ⊥, pa je implikacija ⊤. r nije potrebno."],
+];
+const LOGIKA_DRILL = [
+  () => {
+    const [f, why] = pick(LOG_FORMS); const { ast } = LOG.parse(f), vars = [...LOG.vars(ast)];
+    let t = 0, n = 1 << vars.length;
+    for (let i = 0; i < n; i++) { const env = {}; vars.forEach((v, j) => env[v] = !!(i >> j & 1)); if (LOG.ev(ast, env)) t++; }
+    const cls = t === n ? 0 : t === 0 ? 1 : 2;
+    const opts = ["tautologija (uvijek ⊤)", "kontradikcija (nikad ⊤)", "ni jedno ni drugo (zavisi od slova)"];
+    return mcQ(`Formula <span class="mono">${f}</span> je:`, opts[cls], opts.filter((_, k) => k !== cls), why);
+  },
+  () => { const [q, a, why] = pick(LOG_VALS); return mcQ(q, OPT_TF[a], OPT_TF.filter((_, k) => k !== a), why); },
+  () => { const n = rnd(2, 6); return { kind: "r", q: `Koliko redova ima tablica istinitosti formule sa ${n} različita iskazna slova?`, val: [2 ** n, 0], a: String(2 ** n), why: `Svako slovo je ⊤ ili ⊥, pa je broj redova 2<sup>${n}</sup> = ${2 ** n}.` }; },
+  () => { const [f, k, why] = pick([["p ⇒ q", 1, "Implikacija je ⊥ samo za ⊤ ⇒ ⊥: jedan red."], ["p ∨ q", 1, "Disjunkcija je ⊥ samo kad su oba ⊥: jedan red."], ["p ∧ q", 3, "Konjunkcija je ⊤ samo u jednom redu, pa je ⊥ u ostala 3."], ["p ⇔ q", 2, "Ekvivalencija je ⊥ kad p i q imaju različite vrijednosti: 2 reda."], ["p ∨ ¬p", 0, "Princip isključenja trećeg: uvijek ⊤, pa ⊥ nema ni u jednom redu."], ["(p ⇒ q) ∧ (q ⇒ p)", 2, "To je p ⇔ q, pa je ⊥ u 2 reda."]]); return { kind: "r", q: `U koliko redova tablice formula <span class="mono">${f}</span> ima vrijednost ⊥?`, val: [k, 0], a: String(k), why }; },
+];
+
+// ---------- SKUPOVI ----------
+const SET_IDS = [
+  ["A ∩ Aᶜ", "∅", "Ništa ne može biti istovremeno u A i van A."], ["A ∪ Aᶜ", "U", "Svaki element je ili u A ili van A."],
+  ["A \\ A", "∅", "Iz A izbacimo sve iz A."], ["A Δ A", "∅", "Simetrična razlika broji ono što je u tačno jednom od skupova. Ovdje toga nema."],
+  ["A Δ ∅", "A", "Sa ∅ nema zajedničkih elemenata, pa ostaje A."], ["(A \\ B) ∩ B", "∅", "A \\ B ne sadrži ništa iz B."],
+  ["A ∩ (A ∪ B)", "A", "Zakon apsorpcije: A ⊆ A ∪ B."], ["A ∪ (A ∩ B)", "A", "Zakon apsorpcije: A ∩ B ⊆ A."],
+  ["(Aᶜ)ᶜ", "A", "Dvostruki komplement vraća skup."], ["∅ᶜ", "U", "Van praznog skupa je sve."],
+  ["∅ \\ A", "∅", "Iz praznog skupa nema šta da se izbaci."], ["A ∩ ∅", "∅", "Presjek sa praznim skupom je prazan."],
+];
+const SET_POOL = ["∅", "U", "A", "B", "Aᶜ", "A ∩ B", "A ∪ B"];
+const SKUPOVI_DRILL = [
+  () => { const [e, r, why] = pick(SET_IDS); const w = SET_POOL.filter(x => x !== r).sort(() => Math.random() - .5).slice(0, 3); return mcQ(`<span class="mono">${e} = ?</span>`, r, w, why); },
+  () => { const n = pick([0, 1, 2, 3, 4, 5, 6, 0]); return { kind: "r", q: `|A| = ${n}. Koliko elemenata ima P(A)?`, val: [2 ** n, 0], a: String(2 ** n), why: n === 0 ? "Zamka: A = ∅, a P(∅) = {∅} ima jedan element (sam prazan skup)." : `Svaki element biramo „u podskupu“ ili „ne“: 2<sup>${n}</sup> = ${2 ** n}.` }; },
+  () => mcQ("P(∅) = ?", "{∅}", ["∅", "{0}", "ne postoji"], "Jedini podskup praznog skupa je ∅, pa P(∅) ima tačno jedan element: {∅} ≠ ∅."),
+  () => {
+    const a = rnd(-5, 2), b = a + rnd(1, 4), t = rnd(0, 3);
+    if (t === 0) { const c = b + rnd(1, 3), d = c + rnd(1, 3); return { kind: "iv", q: `(${a}, ${b}) ∩ (${c}, ${d}) = ?`, a: "∅", why: `Intervali se ne dodiruju (${b} < ${c}), pa nemaju zajedničkih tačaka.` }; }
+    const d = b + rnd(1, 4);
+    if (t === 1) return { kind: "iv", q: `(${a}, ${b}) ∩ (${b}, ${d}) = ?`, a: "∅", why: `Tačka ${b} je kraj oba intervala, ali nijedan je ne sadrži (otvorene zagrade). Presjek je ∅.` };
+    if (t === 2) return { kind: "iv", q: `[${a}, ${b}] ∩ [${b}, ${d}] = ?`, a: `{${b}}`, why: `Jedina zajednička tačka je ${b}, a obje zagrade su zatvorene. Presjek je jednočlan skup {${b}}, a ne interval.` };
+    const m = a + 1, b2 = m + rnd(1, 3), d2 = b2 + rnd(1, 3); return { kind: "iv", q: `(${a}, ${b2}) ∩ [${m}, ${d2}) = ?`, a: `[${m}, ${b2})`, why: `Lijevi kraj je veći od dva lijeva kraja (${m}, zatvoren), a desni manji od dva desna (${b2}, otvoren).` };
+  },
+  () => { const k = rnd(1, 9), a = rnd(-5, 5); const [q, ans, why] = pick([[`|x − ${a}| < −${k}`, "∅", "Apsolutna vrijednost nikad nije negativna, pa ne može biti manja od negativnog broja."], [`|x − ${a}| ≥ −${k}`, "R", "Apsolutna vrijednost je uvijek ≥ 0 > −" + k + ", pa važi za svako x."], [`x² + ${k} > 0`, "R", "x² ≥ 0, pa je x² + " + k + " uvijek pozitivno."], ["x² < 0", "∅", "Kvadrat realnog broja nikad nije negativan."], ["x² ≤ 0", "{0}", "x² ≥ 0, pa je x² ≤ 0 samo za x² = 0, tj. x = 0."]]); return { kind: "iv", q: `Skup rješenja: ${q}`, a: ans, why, hint: "Upiši ∅ ako nema rješenja, R ako je svaki realan broj rješenje." }; },
+  () => {
+    const n = rnd(4, 6), S = Array.from({ length: n }, (_, i) => i + 1), A = S.filter(() => Math.random() < .5).slice(0, 3); if (A.length < 2) A.push(...[1, 2].filter(x => !A.includes(x)));
+    A.sort((x, y) => x - y);
+    const impossible = Math.random() < .35;
+    const B = impossible ? [A[0], 9] : A.filter(() => Math.random() < .6);
+    const cnt = impossible ? 0 : 2 ** (n - A.length);
+    return { kind: "r", q: `X ⊆ {${S.join(", ")}} i {${A.join(", ")}} ∩ X = ${B.length ? "{" + B.join(", ") + "}" : "∅"}. Koliko ima takvih skupova X?`, val: [cnt, 0], a: String(cnt), why: impossible ? `9 ∉ {${A.join(", ")}}, pa presjek nikad ne može sadržati 9. Rješenja nema (0).` : `Elementi iz {${A.join(", ")}} su određeni: ${B.length ? B.join(", ") + " moraju biti u X" : "nijedan nije u X"}${A.filter(x => !B.includes(x)).length ? ", " + A.filter(x => !B.includes(x)).join(", ") + " ne smiju" : ""}. Ostalih ${n - A.length} elemenata je slobodno, pa ima 2<sup>${n - A.length}</sup> = ${cnt} rješenja.` };
+  },
+  () => {
+    const a = rnd(3, 12), b = rnd(3, 12);
+    if (Math.random() < .4) { const c = Math.min(a, b) + rnd(1, 3); return mcQ(`|A| = ${a}, |B| = ${b}, |A ∩ B| = ${c}. Koliko je |A ∪ B|?`, `takva situacija nije moguća`, [`${a + b - c}`, `${a + b}`, `${Math.max(a, b)}`], `A ∩ B ⊆ A i A ∩ B ⊆ B, pa presjek ne može imati više od ${Math.min(a, b)} elemenata.`); }
+    const c = rnd(0, Math.min(a, b)); return { kind: "r", q: `|A| = ${a}, |B| = ${b}, |A ∩ B| = ${c}. |A ∪ B| = ?`, val: [a + b - c, 0], a: String(a + b - c), why: `|A ∪ B| = |A| + |B| − |A ∩ B| = ${a} + ${b} − ${c}. Presjek se oduzima jer je brojan dva puta.` };
+  },
+];
+
+// ---------- RELACIJE ----------
+const REL_CONC = [
+  ["Prazna relacija ρ = ∅ na A = {1, 2} je:", "simetrična, antisimetrična i tranzitivna, ali nije refleksivna", ["refleksivna, simetrična i tranzitivna", "nema nijedno svojstvo", "nije relacija, pa ništa ne važi"], "Uslovi S, AS i T su oblika „ako … onda …“, a pretpostavka nikad nije ispunjena. R traži (1, 1) ∈ ρ, a toga nema."],
+  ["Dijagonala Δ = {(x, x) | x ∈ A} je:", "i relacija ekvivalencije i relacija poretka", ["samo relacija ekvivalencije", "samo relacija poretka", "ni jedno ni drugo"], "Δ je R, S, AS i T, pa je i ekvivalencija (R, S, T) i poredak (R, AS, T)."],
+  ["Može li relacija biti i simetrična i antisimetrična?", "da, npr. ∅ ili dijagonala", ["ne, to su suprotna svojstva", "samo na praznom skupu", "samo ako je refleksivna"], "S i AS zajedno znače da nema para (x, y) sa x ≠ y. To ima npr. dijagonala."],
+  ["Relacija < na ℕ je:", "antisimetrična i tranzitivna, ali nije ni refleksivna ni simetrična", ["relacija poretka", "relacija ekvivalencije", "samo tranzitivna"], "x < x nikad ne važi (nije R). x < y i y < x nikad ne važe zajedno (AS važi). Iz x < y i y < z slijedi x < z (T)."],
+  ["Relacija xρy ⇔ x ≠ y na {1, 2, 3} je:", "simetrična, ali nije ni refleksivna ni tranzitivna", ["relacija ekvivalencije", "antisimetrična", "refleksivna i simetrična"], "Za T kontraprimjer: 1 ≠ 2 i 2 ≠ 1, a 1 ≠ 1 ne važi."],
+  ["xρy ⇔ x − y je paran broj (na ℤ). Koliko klasa ekvivalencije ima?", "2 (parni i neparni)", ["1", "beskonačno mnogo", "nije ekvivalencija"], "x i y su u relaciji tačno kad imaju istu parnost. Klase su parni i neparni brojevi."],
+  ["Na skupu {1, 2} tražimo relaciju koja je refleksivna i NIJE tranzitivna. Rezultat?", "takva relacija ne postoji", ["{(1, 1), (2, 2)}", "{(1, 2), (2, 1)}", "{(1, 1), (2, 2), (1, 2)}"], "Sa dva elementa refleksivna relacija sadrži (1,1) i (2,2). Bilo koji dodatni par ne može pokvariti tranzitivnost: provjeri sve 4 mogućnosti."],
+];
+function matQ() {
+  const A = [1, 2, 3];
+  let R = []; for (const x of A) for (const y of A) if (Math.random() < .45) R.push([String(x), String(y)]);
+  if (!R.length) R = [["1", "1"]];
+  const k = pick(["R", "S", "AS", "T"]), names = { R: "refleksivna", S: "simetrična", AS: "antisimetrična", T: "tranzitivna" };
+  const P = REL.props(A.map(String), R);
+  const tbl = `<table class="mat"><tr><th class="corner">ρ</th><th>1</th><th>2</th><th>3</th></tr>${A.map(x => `<tr><th>${x}</th>${A.map(y => `<td class="${x === y ? "diag" : ""}">${REL.has(R, String(x), String(y)) ? 1 : 0}</td>`).join("")}</tr>`).join("")}</table>`;
+  const tip = { R: "Gledaj samo dijagonalu.", S: "Gledaj da li je matrica simetrična oko dijagonale.", AS: "Gledaj parove simetričnih mjesta van dijagonale: nikad dvije jedinice.", T: "Za svaki put x → y → z mora postojati i x → z." }[k];
+  return yesNo(`Da li je relacija zadata matricom ${names[k]}?${tbl}`, P[k].ok, `${tip} Ovdje: ${P[k].why}.`);
+}
+const RELACIJE_DRILL = [
+  matQ, matQ,
+  () => { const [q, r, w, why] = pick(REL_CONC); return mcQ(q, r, w, why); },
+  () => { const m = rnd(2, 6), n = rnd(m - 1, 12); const k = Math.min(m, n); return { kind: "r", q: `Na skupu {1, 2, …, ${n}}: xρy ⇔ x i y daju isti ostatak pri dijeljenju sa ${m}. Koliko ima klasa ekvivalencije?`, val: [k, 0], a: String(k), why: n >= m ? `Klasa ima onoliko koliko ima mogućih ostataka: 0, 1, …, ${m - 1}, tj. ${m}.` : `Mogućih ostataka ima ${m}, ali skup ima samo ${n} elemenata, pa je svaki element sam u svojoj klasi: ${n} klasa.` }; },
+  () => { const n = rnd(1, 3), refl = Math.random() < .5; const e = refl ? n * n - n : n * n; return { kind: "r", q: `Koliko ima ${refl ? "refleksivnih " : ""}binarnih relacija na skupu od ${n} element${n === 1 ? "a" : "a"} (računajući i ∅${refl ? ", ako je refleksivna" : ""})?`, val: [2 ** e, 0], a: String(2 ** e), why: refl ? `${n} dijagonalnih parova je obavezno, a ostalih n² − n = ${e} je slobodno: 2<sup>${e}</sup>.` : `|A × A| = ${n * n}, a svaki par biramo „u relaciji“ ili „ne“: 2<sup>${n * n}</sup>.` }; },
+];
+
+// ---------- FUNKCIJE ----------
+const FUN_INV = [
+  ["f: ℝ → ℝ, f(x) = x²", "ne postoji", ["√x", "x²", "1/x²"], "f(−1) = f(1), pa f nije 1-1 i inverz ne postoji."],
+  ["f: [0, +∞) → [0, +∞), f(x) = x²", "√x", ["ne postoji", "−√x", "x/2"], "Na [0, +∞) je x² rastuća i „na“, pa je inverz √x. Odgovor zavisi od domena."],
+  ["f: ℝ → ℝ, f(x) = 5", "ne postoji", ["x − 5", "x/5", "5"], "Konstanta nije ni 1-1 ni „na“."],
+  ["f: ℝ → ℝ, f(x) = x³", "∛x", ["ne postoji", "x³", "1/x³"], "x³ je strogo rastuća i „na“ ℝ, pa je inverz ∛x."],
+  ["f: ℝ → ℝ, f(x) = |x|", "ne postoji", ["|x|", "−x", "x"], "|−1| = |1|, pa f nije 1-1."],
+  ["f: ℝ \\ {0} → ℝ \\ {0}, f(x) = 1/x", "1/x (sama sebi je inverz)", ["ne postoji", "x", "−1/x"], "y = 1/x ⇔ x = 1/y, pa je f⁻¹ = f."],
+];
+const FUNKCIJE_DRILL = [
+  () => { const a = rnd(1, 6), b = rnd(1, 6), k = pick(["injekcija", "sirjekcija", "bijekcija"]); const ok = k === "injekcija" ? a <= b : k === "sirjekcija" ? a >= b : a === b; return yesNo(`|X| = ${a}, |Y| = ${b}. Može li neko preslikavanje f: X → Y biti ${k}?`, ok, k === "injekcija" ? `Injekcija traži |X| ≤ |Y| (svaki element svoju sliku). Ovdje ${a} ${ok ? "≤" : ">"} ${b}.` : k === "sirjekcija" ? `Sirjekcija traži |X| ≥ |Y| (svaki element iz Y bar jedan original). Ovdje ${a} ${ok ? "≥" : "<"} ${b}.` : `Bijekcija traži |X| = |Y|. Ovdje je ${a} ${ok ? "=" : "≠"} ${b}.`); },
+  () => { const n = rnd(1, 4), m = rnd(1, 4); return { kind: "r", q: `Koliko ima svih preslikavanja f: X → Y ako je |X| = ${n}, |Y| = ${m}?`, val: [m ** n, 0], a: String(m ** n), why: `Svaki od ${n} elemenata iz X bira jednu od ${m} slika: ${m}<sup>${n}</sup> = ${m ** n}.` }; },
+  () => { const a = pick([2, 3, 4, 5, -2, -3]), b = rnd(-9, 9); return { kind: "fx", q: `f(x) = ${linStr(Frac.of(a), Frac.of(b))}. f⁻¹(x) = ?`, a: `(x - (${b}))/(${a})`, disp: `(x ${b >= 0 ? "−" : "+"} ${Math.abs(b)})/${a < 0 ? "(" + String(a).replace("-", "−") + ")" : a}`, why: `f prvo množi sa ${a}, pa dodaje ${b}. Inverz radi obrnuto: oduzme ${b}, pa podijeli sa ${a}: f⁻¹(x) = (x ${b >= 0 ? "−" : "+"} ${Math.abs(b)})/${a < 0 ? "(" + a + ")" : a}.` }; },
+  () => { const [a, b, c, d] = pick([[2, 1, 1, -1], [1, 2, 1, 3], [3, -1, 1, 2], [1, 0, 1, 1], [2, 3, 1, -2]]); return { kind: "fx", q: `f(x) = (${linStr(Frac.of(a), Frac.of(b))})/(${linStr(Frac.of(c), Frac.of(d))}). f⁻¹(x) = ?`, a: `(${d}*x - (${b}))/(-(${c})*x + ${a})`, disp: `(${linStr(Frac.of(d), Frac.of(-b))})/(${linStr(Frac.of(-c), Frac.of(a))})`, why: `Za (ax + b)/(cx + d) inverz je (dx − b)/(−cx + a): a i d zamijene mjesta, b i c promijene znak. Ovdje (${linStr(Frac.of(d), Frac.of(-b))})/(${linStr(Frac.of(-c), Frac.of(a))}).` }; },
+  () => { const [f, r, w, why] = pick(FUN_INV); return mcQ(`${f}. Inverzna funkcija f⁻¹(x) = ?`, r, w, why); },
+  () => { const a = rnd(1, 5), gf = Math.random() < .5; return { kind: "fx", q: `f(x) = x + ${a}, g(x) = x². ${gf ? "(g∘f)(x)" : "(f∘g)(x)"} = ?`, a: gf ? `(x + ${a})^2` : `x^2 + ${a}`, disp: gf ? `(x + ${a})²` : `x² + ${a}`, why: gf ? `(g∘f)(x) = g(f(x)): prvo f (dodaj ${a}), pa g (kvadriraj): (x + ${a})².` : `(f∘g)(x) = f(g(x)): prvo g (kvadriraj), pa f (dodaj ${a}): x² + ${a}. Redoslijed je bitan: g∘f ≠ f∘g.` }; },
+  () => { const [a, b, c, d] = pick([[2, 1, 1, -1], [3, 2, 1, 1], [1, 4, 2, 1], [-4, 1, 2, 3]]); const v = new Frac(BigInt(a), BigInt(c)); return { kind: "r", q: `f(x) = (${linStr(Frac.of(a), Frac.of(b))})/(${linStr(Frac.of(c), Frac.of(d))}). Koju vrijednost f nikad ne dostiže?`, val: [v.toNumber(), 0], a: v.toString().replace("-", "−"), why: `To je a/c = ${a}/${c} (horizontalna asimptota). Jednačina f(x) = a/c nema rješenja, jer se x „skrati“.` }; },
+];
+
+// ---------- INDUKCIJA ----------
+const IND_THR = [["2^n", "n^2"], ["3^n", "n^3"], ["2^n", "2n+1"], ["n^2", "2n+1"], ["2^n", "n^3"], ["n^2", "5n"]];
+const INDUKCIJA_DRILL = [
+  () => {
+    const [l, d] = pick(IND_THR), L = parseExpr(l, ["n"]), D = parseExpr(d, ["n"]);
+    const ok = n => evalNum(L, { n }) > evalNum(D, { n });
+    let thr = 1; for (let m = 1; m <= 30; m++) { let all = true; for (let n = m; n <= 60; n++) if (!ok(n)) { all = false; break; } if (all) { thr = m; break; } }
+    const early = []; for (let n = 1; n < thr; n++) if (ok(n)) early.push(n);
+    const tbl = Array.from({ length: Math.min(thr + 1, 11) }, (_, i) => i + 1).map(n => `n=${n}: ${evalNum(L, { n })} ${ok(n) ? ">" : "≤"} ${evalNum(D, { n })}`).join(" · ");
+    return { kind: "r", q: `Od kog najmanjeg n važi ${l.replace("^", "^")} > ${d} <i>za sva</i> n nadalje?`, val: [thr, 0], a: String(thr), why: `Mala tablica: ${tbl}.${early.length ? ` Pažnja: važi i za n ∈ {${early.join(", ")}}, pa onda prestane i opet počne. Zato baza indukcije mora biti n = ${thr}.` : ""}` };
+  },
+  () => { const n = pick([10, 20, 50, 100, 200, 1000]); return { kind: "r", q: `1 + 2 + 3 + … + ${n} = ?`, val: [n * (n + 1) / 2, 0], a: String(n * (n + 1) / 2), why: `Spoji prvi i posljednji, drugi i pretposljednji…: ${n / 2} parova po ${n + 1}, tj. n(n+1)/2 = ${n * (n + 1) / 2}.` }; },
+  () => { const n = rnd(5, 40); return { kind: "r", q: `1 + 3 + 5 + … + ${2 * n - 1} = ?`, val: [n * n, 0], a: String(n * n), why: `Zbir prvih n neparnih brojeva je n². Ovdje ima ${n} sabiraka, pa je zbir ${n}² = ${n * n}.` }; },
+  () => mcQ("Dokazan je korak T(k) ⇒ T(k+1), ali T(1) ne važi. Šta se može zaključiti?", "ništa – tvrđenje može biti netačno za svako n", ["tvrđenje važi za sve n ≥ 2", "tvrđenje važi za sve n", "tvrđenje ne važi ni za jedno n"], "Bez baze korak „dokazuje“ i besmislice: iz n = n + 1 slijedi n + 1 = n + 2. Ali tvrđenje može važiti od nekog kasnijeg n, pa ni „ne važi nigdje“ nije siguran zaključak."),
+  () => { const m = rnd(3, 12), n = rnd(10, 999); return { kind: "r", q: `Ostatak broja ${m + 1}^${n} pri dijeljenju sa ${m}?`, val: [1, 0], a: "1", why: `${m + 1} = ${m} + 1 daje ostatak 1, a 1 na bilo koji stepen je 1.` }; },
+  () => { const m = rnd(3, 12), n = rnd(10, 999); const r = n % 2 ? m - 1 : 1; return { kind: "r", q: `Ostatak broja ${m - 1}^${n} pri dijeljenju sa ${m}?`, val: [r, 0], a: String(r), why: `${m - 1} ≡ −1 (mod ${m}), pa je ${m - 1}^${n} ≡ (−1)^${n} = ${n % 2 ? "−1, tj. ostatak " + (m - 1) : "1"}.` }; },
+  () => mcQ("Da li je n² + n + 41 prost broj za svako n ∈ ℕ?", "ne", ["da", "ne može se odrediti"], "Za n = 1, …, 39 jeste prost, ali za n = 40 dobijamo 40² + 40 + 41 = 41², a za n = 41 je djeljiv sa 41. Mnogo primjera nije dokaz, dok je jedan kontraprimjer dovoljan za „ne“."),
+];
+
+// dodatna „zamka“ pitanja za kompleksne brojeve (dodaju se postojećim)
+KX_DRILL.push(
+  () => mcQ("Koliko rješenja ima jednačina z = z̄ (z ∈ ℂ)?", "beskonačno mnogo (svaki realan broj)", ["nijedno", "jedno (z = 0)", "dva"], "z = z̄ ⇔ a + bi = a − bi ⇔ b = 0. Rješenje je svaki realan broj."),
+  () => mcQ("Koliko rješenja ima jednačina |z| = −1?", "nijedno", ["jedno", "dva", "beskonačno mnogo"], "Modul je rastojanje, pa nikad nije negativan. Skup rješenja je ∅."),
+  () => mcQ("Koliko rješenja u ℂ ima z² = −4?", "dva: 2i i −2i", ["nijedno", "jedno: 2i", "beskonačno mnogo"], "U ℝ nema rješenja, ali u ℂ ima: (±2i)² = 4i² = −4."),
+  () => mcQ("Koliko rješenja ima z + z̄ = 2i?", "nijedno", ["jedno", "beskonačno mnogo", "dva"], "z + z̄ = 2·Re(z) je uvijek realan broj, a 2i nije realan."),
+);
+TG_DRILL.push(
+  () => mcQ("Arg(0) = ?", "nije definisan", ["0", "π", "π/2"], "Broj 0 nema argument: tačka O nema pravac."),
+  () => mcQ("Koliko ima brojeva z sa |z| = 2 i Arg z = π/3?", "tačno jedan: 1 + √3i", ["nijedan", "dva", "beskonačno mnogo"], "Modul i glavni argument jednoznačno određuju broj: z = 2(cos π/3 + i sin π/3) = 1 + √3i."),
+  () => mcQ("Koliko ima brojeva z sa |z| = 2?", "beskonačno mnogo (cijela kružnica)", ["dva: 2 i −2", "četiri", "jedan"], "Svi brojevi na kružnici poluprečnika 2 oko O imaju modul 2."),
+);
+
+// ---------- „Kakav sve može biti rezultat“ (ide u Pravila) ----------
+const OUTCOMES = {
+  logika: `<ul><li>Formula može biti <b>tautologija</b> (uvijek ⊤), <b>kontradikcija</b> (nikad ⊤, skup redova u kojima je tačna je ∅) ili <b>ni jedno ni drugo</b>.</li><li>Dvije formule mogu biti ekvivalentne ili ne. Za „ne“ je dovoljan jedan red.</li><li>Vrijednost složenog iskaza se nekad <b>ne može odrediti</b> bez vrijednosti svih slova (npr. τ(p ⇒ q) za τ(p) = ⊤).</li></ul>`,
+  skupovi: `<ul><li>Rezultat operacije može biti <b>∅</b> ili cijeli univerzalni skup U (kod intervala <b>ℝ</b>).</li><li>Presjek intervala može biti i <b>jedna tačka</b> {a}, a ne interval.</li><li>Zadatak „odredi X“ može imati <b>više rješenja</b> (2<sup>k</sup>) ili <b>nijedno</b> (npr. {1, 2} ∩ X = {3}).</li><li>Podaci u zadatku sa Venovim dijagramom mogu biti <b>protivrječni</b>: tada takva situacija ne postoji.</li><li>Nejednačina može imati skup rješenja ∅ (|x| &lt; −1) ili ℝ (x² + 1 &gt; 0).</li></ul>`,
+  relacije: `<ul><li>Pravilo može dati <b>praznu relaciju</b>. Ona je S, AS i T, ali nije R.</li><li>Relacija može biti <b>i S i AS</b> (npr. dijagonala) ili <b>ni S ni AS</b>. To nisu suprotnosti.</li><li>Relacija sa traženim svojstvima možda <b>ne postoji</b> ili ih postoji više.</li><li>Ako relacija nije ekvivalencija, <b>klase ekvivalencije ne postoje</b>.</li></ul>`,
+  funkcije: `<ul><li>Zadata relacija možda <b>nije preslikavanje</b> (element bez slike ili sa dvije slike).</li><li>Inverz <b>ne postoji</b> ako f nije bijekcija. Nekad postoji tek kad se <b>suzi domen</b> (x² na [0, +∞)), pa odgovor zavisi od domena.</li><li>Po Dirihleovom principu: ako je |X| &gt; |Y|, injekcija ne postoji, a ako je |X| &lt; |Y|, sirjekcija ne postoji.</li><li>Kod g∘f zadate po dijelovima neke kombinacije dijelova <b>otpadaju</b> (presjek ∅).</li></ul>`,
+  indukcija: `<ul><li>Tvrđenje može biti <b>netačno</b>. Tada je odgovor kontraprimjer, a indukcija se ne radi.</li><li>Tvrđenje može važiti <b>tek od nekog n</b> (2ⁿ &gt; n² za n ≥ 5), ili važiti za mala n, prestati i opet početi (2ⁿ &gt; n² važi i za n = 1).</li><li>Bez baze korak ne dokazuje ništa. Bez koraka ni hiljadu provjerenih n nije dokaz (n² + n + 41).</li></ul>`,
+  kompleksni: `<ul><li>Jednačina u ℂ može imati <b>jedno</b> rješenje, <b>nijedno</b> (z + z̄ = 2i, |z| = −1) ili <b>beskonačno mnogo</b> (z = z̄ važi za svaki realan z).</li><li>Jednačina bez rješenja u ℝ može imati rješenja u ℂ (z² = −4 ⇒ z = ±2i).</li></ul>`,
+  trig: `<ul><li>Broj 0 <b>nema argument</b>, pa ni trigonometrijski oblik.</li><li>Argument je određen samo do na 2π: arg z = φ + 2kπ. Glavni argument je jedinstven u (−π, π].</li><li>Uslov |z| = r daje <b>beskonačno mnogo</b> brojeva (kružnica), a tek modul i argument zajedno daju jedan broj.</li></ul>`,
+};
+const THINK_DRILL = { logika: [LOGIKA_DRILL, "lgd"], skupovi: [SKUPOVI_DRILL, "skd"], relacije: [RELACIJE_DRILL, "rld"], funkcije: [FUNKCIJE_DRILL, "fnd"], indukcija: [INDUKCIJA_DRILL, "ind"] };
+function addThinking(name) {
+  const panel = $("#tab-" + name);
+  if (!panel) return;
+  if (THINK_DRILL[name]) {
+    const [gens, id] = THINK_DRILL[name];
+    panel.insertAdjacentHTML("beforeend", drillCard(id, "Vidi odmah – trening", "Kratka pitanja koja se, uz razumijevanje, rješavaju u glavi za par sekundi. Među njima su i „zamke“: odgovor može biti ∅, „nema rješenja“, „ne postoji“ ili „ne može se odrediti“. Cilj je ispod 10 s."));
+    drillWire(id, gens);
+  }
+  if (OUTCOMES[name]) panel.insertAdjacentHTML("beforeend", `<section class="card"><details class="theory"><summary>🧭 Kakav sve može biti rezultat</summary><p>Profesor zadaje i zadatke čiji odgovor nije „lijep“ broj. Ovo su svi mogući ishodi u ovoj oblasti, i svaki je ispravan odgovor:</p>${OUTCOMES[name]}</details></section>`);
+}
+
 // ===================== POKRETANJE =====================
 "use strict";
 
 // kratki nazivi podtabova (redom kartica u svakom tabu)
 const SUB_LABELS = {
-  logika: ["Tablica istinitosti", "Ekvivalencija formula"],
-  skupovi: ["Operacije sa skupovima", "Nepoznati skup X", "Intervali", "Venov dijagram"],
-  relacije: ["Ispitaj relaciju", "Konstruiši relaciju", "Broj relacija"],
-  funkcije: ["Preslikavanje", "Realna funkcija i inverz", "Smjena", "Po dijelovima i g∘f", "Kompozicija"],
-  indukcija: ["Zbir (identitet)", "Djeljivost", "Nejednakost"],
+  logika: ["Tablica istinitosti", "Ekvivalencija formula", "⚡ Vidi odmah"],
+  skupovi: ["Operacije sa skupovima", "Nepoznati skup X", "Intervali", "Venov dijagram", "⚡ Vidi odmah"],
+  relacije: ["Ispitaj relaciju", "Konstruiši relaciju", "Broj relacija", "⚡ Vidi odmah"],
+  funkcije: ["Preslikavanje", "Realna funkcija i inverz", "Smjena", "Po dijelovima i g∘f", "Kompozicija", "⚡ Vidi odmah"],
+  indukcija: ["Zbir (identitet)", "Djeljivost", "Nejednakost", "⚡ Vidi odmah"],
   kompleksni: ["Računanje izraza", "Stepeni broja i", "Jednakost (x, y)", "Modul i ravan", "⚡ Vidi odmah"],
   trig: ["Algebarski → trig.", "Trig. → algebarski", "Množenje i dijeljenje", "Moavrova formula", "⚡ Vidi odmah"],
 };
@@ -3422,7 +3749,7 @@ function showSub(name, sub) {
 document.addEventListener("DOMContentLoaded", () => {
   const renders = { logika: logikaRender, skupovi: skupoviRender, relacije: relacijeRender, funkcije: funkcijeRender, indukcija: indukcijaRender, kompleksni: kompleksniRender, trig: trigRender };
   for (const [k, fn] of Object.entries(renders)) {
-    try { fn(); buildSubtabs(k); } catch (e) { console.error(e); $("#tab-" + k).innerHTML = `<div class="card bad">Greška pri učitavanju taba: ${esc(e.message)}</div>`; }
+    try { fn(); addThinking(k); buildSubtabs(k); } catch (e) { console.error(e); $("#tab-" + k).innerHTML = `<div class="card bad">Greška pri učitavanju taba: ${esc(e.message)}</div>`; }
   }
   const go = (name, sub, push = true) => {
     if (!renders[name]) name = "logika";

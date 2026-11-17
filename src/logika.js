@@ -184,5 +184,14 @@ function logikaSolve(src, ones, eqMode = false) {
     h += `<div class="verdict no">✖ Iz posljednje kolone vidimo da formula NIJE tautologija.</div>`;
     h += `<div class="step">Netačna je za: ${bad.map(i => "(" + vars.map(v => `${v}=${rows[i].env[v] ? T : F}`).join(", ") + ")").join("; ")}.${allF ? " Formula je netačna u svim redovima – to je <b>kontradikcija</b>." : ""}</div>`;
   }
+  const nT = last.filter(Boolean).length, rowS = i => "(" + vars.map(v => `${v} = ${rows[i].env[v] ? T : F}`).join(", ") + ")";
+  if (!eqMode) h += outcomeBox(allT ? `tautologija – tačna u svih ${rows.length} redova.` : allF ? `kontradikcija – formula nije tačna ni u jednom redu (skup redova u kojima je tačna je ∅).` : `ni tautologija ni kontradikcija – tačna je u ${nT} od ${rows.length} redova.`);
+  const mainHint = { "⇒": "Glavni veznik je ⇒. Implikacija je ⊥ <b>samo</b> kad je lijeva strana ⊤, a desna ⊥, pa je dovoljno pogledati samo redove u kojima je lijeva strana tačna.", "∨": "Glavni veznik je ∨. Disjunkcija je ⊥ <b>samo</b> kad su oba dijela ⊥. Ako je jedan dio negacija nečega iz drugog dijela (npr. … ∨ ¬r), probaj slučajeve r = ⊤ i r = ⊥ i vidi da li je uvijek bar jedan dio ⊤.", "∧": "Glavni veznik je ∧. Konjunkcija je ⊤ <b>samo</b> kad su oba dijela ⊤, pa je jedan ⊥ dio dovoljan za ⊥.", "⇔": "Glavni veznik je ⇔. Formula je tautologija tačno kad lijeva i desna strana uvijek imaju istu vrijednost, tj. kad su to isti iskaz zapisan na dva načina (npr. kontrapozicija, De Morgan).", "¬": "Glavni veznik je ¬. ¬A je tautologija tačno kad je A kontradikcija." }[ast.op];
+  h += insightBox([
+    !allT && bad.length ? `Za odgovor „NIJE tautologija“ dovoljan je <b>jedan</b> red u kojem je formula ⊥ (kontraprimjer), npr. ${rowS(bad[0])}. Cijela tablica tada nije potrebna.` : "",
+    mainHint,
+    "Prečice: ako je lijeva strana implikacije ⊥ ili desna ⊤, implikacija je ⊤ bez gledanja ostatka. Ako je u konjunkciji jedan dio ⊥, cijela je ⊥.",
+    vars.length >= 3 ? `Sa ${vars.length} slova tablica ima ${rows.length} redova. Zato se isplati tražiti samo „opasne“ redove umjesto popunjavanja svih.` : "",
+  ]);
   return h;
 }

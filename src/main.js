@@ -3,11 +3,11 @@
 
 // kratki nazivi podtabova (redom kartica u svakom tabu)
 const SUB_LABELS = {
-  logika: ["Tablica istinitosti", "Ekvivalencija formula"],
-  skupovi: ["Operacije sa skupovima", "Nepoznati skup X", "Intervali", "Venov dijagram"],
-  relacije: ["Ispitaj relaciju", "Konstruiši relaciju", "Broj relacija"],
-  funkcije: ["Preslikavanje", "Realna funkcija i inverz", "Smjena", "Po dijelovima i g∘f", "Kompozicija"],
-  indukcija: ["Zbir (identitet)", "Djeljivost", "Nejednakost"],
+  logika: ["Tablica istinitosti", "Ekvivalencija formula", "⚡ Vidi odmah"],
+  skupovi: ["Operacije sa skupovima", "Nepoznati skup X", "Intervali", "Venov dijagram", "⚡ Vidi odmah"],
+  relacije: ["Ispitaj relaciju", "Konstruiši relaciju", "Broj relacija", "⚡ Vidi odmah"],
+  funkcije: ["Preslikavanje", "Realna funkcija i inverz", "Smjena", "Po dijelovima i g∘f", "Kompozicija", "⚡ Vidi odmah"],
+  indukcija: ["Zbir (identitet)", "Djeljivost", "Nejednakost", "⚡ Vidi odmah"],
   kompleksni: ["Računanje izraza", "Stepeni broja i", "Jednakost (x, y)", "Modul i ravan", "⚡ Vidi odmah"],
   trig: ["Algebarski → trig.", "Trig. → algebarski", "Množenje i dijeljenje", "Moavrova formula", "⚡ Vidi odmah"],
 };
@@ -66,7 +66,7 @@ function showSub(name, sub) {
 document.addEventListener("DOMContentLoaded", () => {
   const renders = { logika: logikaRender, skupovi: skupoviRender, relacije: relacijeRender, funkcije: funkcijeRender, indukcija: indukcijaRender, kompleksni: kompleksniRender, trig: trigRender };
   for (const [k, fn] of Object.entries(renders)) {
-    try { fn(); buildSubtabs(k); } catch (e) { console.error(e); $("#tab-" + k).innerHTML = `<div class="card bad">Greška pri učitavanju taba: ${esc(e.message)}</div>`; }
+    try { fn(); addThinking(k); buildSubtabs(k); } catch (e) { console.error(e); $("#tab-" + k).innerHTML = `<div class="card bad">Greška pri učitavanju taba: ${esc(e.message)}</div>`; }
   }
   const go = (name, sub, push = true) => {
     if (!renders[name]) name = "logika";

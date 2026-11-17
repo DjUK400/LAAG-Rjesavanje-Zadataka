@@ -161,3 +161,16 @@ svg.cplane .ucirc{fill:none;stroke:var(--mute);stroke-dasharray:4 4}
 table.angtab{font-family:var(--mono);font-size:.85rem;margin:10px 0}
 table.angtab th,table.angtab td{padding:4px 8px;text-align:center;border-bottom:1px solid var(--line)}
 .subtabs button[data-sub]:last-child:not([data-sub="pravila"]){}
+
+.outcome{margin:12px 0;padding:10px 13px;border-left:4px solid var(--fk-h,#1d5fae);background:var(--fk-blue-bg,#e6eef8);border-radius:4px;font-size:.93rem}
+.drill-opts{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.drill-opts:empty{display:none}
+.drill-opts .opt{text-align:left;font-weight:500;padding:9px 12px;background:var(--card);border:1.5px solid var(--line)}
+.drill-opts .opt:hover:not(:disabled){border-color:var(--ink)}
+.drill-opts .opt.right{border-color:var(--ok);background:var(--ok-bg);color:var(--ok);font-weight:700}
+.drill-opts .opt.wrong{border-color:var(--no);background:var(--no-bg);color:var(--no)}
+.drill-opts .opt:disabled{cursor:default}
+.drill-q .big:not(.mono){font-size:1.05rem;line-height:1.45}
+.tableau{font-family:var(--mono);font-size:.9rem;line-height:1.7;background:var(--soft);border-radius:4px;padding:8px 12px;margin:8px 0;overflow-x:auto}
+.tableau .br{color:var(--mute)}.tableau .x{color:var(--no);font-weight:700}.tableau .okk{color:var(--ok);font-weight:700}
+.drill-q table.mat{display:table;margin:10px 0 0;font-size:.95rem}

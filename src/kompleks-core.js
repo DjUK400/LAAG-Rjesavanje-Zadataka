@@ -379,33 +379,56 @@ const CPC = { z: "var(--fk-h,#1d5fae)", w: "var(--fk-f,#bb3a2b)", r: "var(--fk-p
 // ---------- „Vidi odmah“ – trening brzog razmišljanja ----------
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-function drillCard(id, title, lead, gens) {
+function drillCard(id, title, lead) {
   return `<section class="card drill" id="${id}">
     <h2>⚡ ${title}</h2>
     <p class="lead">${lead}</p>
     <div class="drill-q" id="${id}-q"></div>
-    <label for="${id}-in">Tvoj odgovor</label>
-    <input id="${id}-in" class="mono" type="text" autocomplete="off" spellcheck="false" placeholder="npr. −1, 2i, 3 − 4i, √3/2 + 1/2 i, 2π/3">
+    <div class="drill-opts" id="${id}-opts"></div>
+    <div class="drill-inwrap" id="${id}-inwrap"><label for="${id}-in">Tvoj odgovor</label>
+    <input id="${id}-in" class="mono" type="text" autocomplete="off" spellcheck="false"></div>
     <div class="btns"><button class="primary" id="${id}-ok">Provjeri</button><button id="${id}-next">Sljedeće →</button><button id="${id}-show">Pokaži rješenje</button><span class="drill-score" id="${id}-score"></span></div>
     <div class="out" id="${id}-out"></div>
   </section>`;
 }
+const DRILL_PH = {
+  ang: "ugao, npr. 2π/3 ili −π/4", r: "broj, npr. 5, −3 ili 2√2", c: "npr. −1, 2i, 3 − 4i, −√3/2 + 1/2 i",
+  set: "skup, npr. {1, 3} ili ∅", iv: "npr. (−1, 3], [2, +inf), ∅ ili R", fx: "izraz po x, npr. (x − 6)/2",
+};
+// normalizovan zapis konačnog skupa
+function setKey(v) {
+  const t = String(v).trim();
+  if (/^(∅|\{\s*\}|prazan( skup)?)$/i.test(t)) return "";
+  return sortElems(parseList(t).map(x => x.replace(/−/g, "-")).map(x => (isNaN(Number(x)) ? x : String(Number(x))))).join(",");
+}
+function ivKey(v) {
+  const t = String(v).trim().replace(/−/g, "-").replace(/∞/g, "inf");
+  if (/^(∅|\{\s*\}|prazan( skup)?)$/i.test(t)) return "∅";
+  if (/^(ℝ|R|\(-inf,\s*\+?inf\))$/.test(t)) return IV.str([{ a: -Infinity, ac: false, b: Infinity, bc: false }]);
+  return IV.str(IV.parse(t));
+}
 function drillWire(id, gens) {
   let cur = null, t0 = 0, ok = 0, tot = 0, streak = 0, done = false;
-  const q = $(`#${id}-q`), inp = $(`#${id}-in`), out = $(`#${id}-out`), sc = $(`#${id}-score`);
+  const q = $(`#${id}-q`), inp = $(`#${id}-in`), out = $(`#${id}-out`), sc = $(`#${id}-score`), opts = $(`#${id}-opts`), inw = $(`#${id}-inwrap`), okb = $(`#${id}-ok`);
   const next = () => {
     cur = pick(gens)(); t0 = performance.now(); done = false;
-    q.innerHTML = `<div class="mono big">${cur.q}</div>${cur.hint ? `<div class="hint">${cur.hint}</div>` : ""}`;
+    q.innerHTML = `<div class="${cur.kind === "mc" ? "" : "mono "}big">${cur.q}</div>${cur.hint ? `<div class="hint">${cur.hint}</div>` : ""}`;
     inp.value = ""; out.classList.remove("show"); out.innerHTML = "";
-    inp.placeholder = cur.kind === "ang" ? "ugao, npr. 2π/3 ili −π/4" : cur.kind === "r" ? "realan broj, npr. 5 ili 2√2" : "npr. −1, 2i, 3 − 4i, −√3/2 + 1/2 i";
+    const mc = cur.kind === "mc";
+    inw.hidden = mc; okb.hidden = mc;
+    opts.innerHTML = mc ? cur.opts.map((o, k) => `<button type="button" class="opt" data-k="${k}">${o}</button>`).join("") : "";
+    if (!mc) inp.placeholder = DRILL_PH[cur.kind] || DRILL_PH.c;
   };
-  const reveal = (good, sec) => {
+  const reveal = (good, sec, chosen) => {
     done = true;
+    if (cur.kind === "mc") $$(".opt", opts).forEach(b => { const k = +b.dataset.k; b.disabled = true; b.classList.toggle("right", k === cur.ans); b.classList.toggle("wrong", k === chosen && k !== cur.ans); });
     const sp = sec !== null ? ` &nbsp;·&nbsp; ${sec.toFixed(1)} s${good && sec <= 10 ? " ⚡" : ""}` : "";
-    out.innerHTML = `<div class="verdict ${good ? "ok" : "no"}">${good ? "✔ Tačno" : sec === null ? "Rješenje" : "✖ Nije tačno"}: <span class="mono">${cur.a}</span>${sp}</div><div class="insight"><b>💡 Kako se vidi odmah:</b> ${cur.why}</div>`;
+    const ans = cur.kind === "mc" ? cur.opts[cur.ans] : (cur.disp || cur.a);
+    out.innerHTML = `<div class="verdict ${good ? "ok" : "no"}">${good ? "✔ Tačno" : sec === null ? "Rješenje" : "✖ Nije tačno"}: <span class="mono">${ans}</span>${sp}</div><div class="insight"><b>💡 Kako se vidi odmah:</b> ${cur.why}</div>`;
     out.classList.add("show");
     sc.textContent = `${ok}/${tot} tačno · niz ${streak}`;
   };
+  const score = good => { tot++; if (good) { ok++; streak++; } else streak = 0; };
   const check = () => {
     if (!cur) return;
     if (done) { next(); return; }
@@ -413,20 +436,31 @@ function drillWire(id, gens) {
     if (!v) { notify("Upiši odgovor (ili klikni „Pokaži rješenje“)."); return; }
     let good = false;
     try {
-      if (cur.kind === "ang") {
-        const A = parseAngle(v); const d = (A.num - cur.val) / (2 * Math.PI);
-        good = Math.abs(d - Math.round(d)) < 1e-7;
+      if (cur.kind === "ang") { const A = parseAngle(v); const d = (A.num - cur.val) / (2 * Math.PI); good = Math.abs(d - Math.round(d)) < 1e-7; }
+      else if (cur.kind === "set") good = setKey(v) === setKey(cur.a);
+      else if (cur.kind === "iv") good = ivKey(v) === ivKey(cur.a);
+      else if (cur.kind === "fx") {
+        const U = parseExpr(v, ["x"]), E = parseExpr(cur.a.replace(/−/g, "-"), ["x"]);
+        good = [-2.3, -0.7, 0.4, 1.9, 3.1, 5.6].every(x => { const a = evalNum(U, { x }), b = evalNum(E, { x }); return (isNaN(a) && isNaN(b)) || Math.abs(a - b) < 1e-7 * Math.max(1, Math.abs(b)); });
       } else {
         const Z = parseZ(v); const [x, y] = Z.z ? Z.z.num() : [Z.rNum * Math.cos(Z.phiNum), Z.rNum * Math.sin(Z.phiNum)];
         good = Math.abs(x - cur.val[0]) < 1e-7 && Math.abs(y - cur.val[1]) < 1e-7;
       }
     } catch (e) { notify("Ne razumijem odgovor: " + e.message); return; }
-    tot++; if (good) { ok++; streak++; } else streak = 0;
-    reveal(good, (performance.now() - t0) / 1000);
+    score(good); reveal(good, (performance.now() - t0) / 1000);
   };
-  $(`#${id}-ok`).onclick = check;
+  okb.onclick = check;
   inp.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+  opts.addEventListener("click", e => {
+    const b = e.target.closest(".opt"); if (!b || done) return;
+    const k = +b.dataset.k, good = k === cur.ans; score(good); reveal(good, (performance.now() - t0) / 1000, k);
+  });
   $(`#${id}-next`).onclick = next;
   $(`#${id}-show`).onclick = () => { if (cur && !done) { tot++; streak = 0; reveal(false, null); } };
   next();
+}
+// mc pitanje: opcije se miješaju, ans = indeks tačne
+function mcQ(q, right, wrongs, why, hint) {
+  const all = [right, ...wrongs].map((t, k) => ({ t, k })).sort(() => Math.random() - .5);
+  return { kind: "mc", q, opts: all.map(o => o.t), ans: all.findIndex(o => o.k === 0), why, hint };
 }

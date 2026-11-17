@@ -99,8 +99,8 @@ function indZbir() {
   if (n0 < i0) throw new MathErr("n mora biti ≥ i₀.");
   // provjera tačnosti
   for (let n = n0; n < n0 + 8; n++) if (!Ls(n).eq(D(n))) {
-    notify("Tvrđenje NIJE tačno – nađen kontraprimjer.", "err");
-    return `<div class="verdict no">✖ Tvrđenje nije tačno: za n = ${n} je L = ${fmtF(Ls(n))}, a D = ${fmtF(D(n))}. Provjeri unos (sabirak, prvi indeks, desnu stranu).</div>`;
+    const ok = []; for (let k = Math.max(n0, i0); k < Math.max(n0, i0) + 15; k++) if (Ls(k).eq(D(k))) ok.push(k);
+    return `<div class="verdict no">Tvrđenje NIJE tačno. Kontraprimjer: za n = ${n} je L = ${fmtF(Ls(n))}, a D = ${fmtF(D(n))}.</div>` + outcomeBox(ok.length ? `jednakost važi samo za n ∈ {${ok.join(", ")}} (provjereno do n = ${Math.max(n0, i0) + 14}), pa ne važi za sve n. Odgovor je kontraprimjer, a indukcija se ne radi.` : `jednakost ne važi ni za jedno provjereno n. Odgovor je kontraprimjer, a indukcija se ne radi.`) + insightBox(["Prije svakog dokaza provjeri n = 1, 2, 3. Ako jednakost tu ne važi, zadatak je zamka i odgovor je „nije tačno“ uz kontraprimjer."]);
   }
   const termK = astStr(substAst(aAst, "i", KV)), termK1raw = astStr(substAst(aAst, "i", K1));
   const k1Ast = substAst(aAst, "i", K1);
@@ -124,7 +124,7 @@ function indZbir() {
    Dalje je<div class="eq mono">D<sub>k+1</sub> = ${esc(dK1)}<br>&nbsp;= ${esc(Dk1.toNice("k"))}${Dk1.toFactored("k") !== Dk1.toNice("k") ? `<br>&nbsp;= ${esc(Dk1.toFactored("k"))}` : ""}</div></div>`;
   if (!Lk1.eq(Dk1)) throw new MathErr("Induktivni korak ne prolazi – provjeri unos.");
   h += `<div class="step">pa je očigledno L<sub>k+1</sub> = D<sub>k+1</sub>, što znači da je T(k+1) ⇔ ⊤. Ovim smo dokazali da T(k) ⇒ T(k+1).</div>`;
-  return h + `<div class="verdict ok">✔ Sada, prema Principu matematičke indukcije, dato tvrđenje je tačno za svaki prirodan broj n ≥ ${n0}.</div>`;
+  return h + `<div class="verdict ok">✔ Sada, prema Principu matematičke indukcije, dato tvrđenje je tačno za svaki prirodan broj n ≥ ${n0}.</div>` + insightBox(["Kod zbira je trik uvijek isti: L<sub>k+1</sub> = (zbir do k) + (k+1)-vi sabirak, a zbir do k zamijeniš hipotezom. Prije računanja zapiši cilj D<sub>k+1</sub>, pa znaš šta treba izvući kao faktor.", "Brza provjera formule bez dokaza: uvrsti n = 1, 2, 3. Na primjer, za 1² + … + n² = n(n+1)(2n+1)/6 i n = 2: 1 + 4 = 5 = 2·3·5/6 ✔."]);
 }
 
 // ---------- djeljivost ----------
@@ -159,7 +159,10 @@ function indDjeljivost() {
   const f = n => evalExact(ast, { n });
   for (let n = n0; n < n0 + 12; n++) {
     const v = f(n);
-    if (!v.isInt() || v.n % m !== 0n) { notify("Tvrđenje nije tačno.", "err"); return `<div class="verdict no">✖ Tvrđenje nije tačno: f(${n}) = ${fmtF(v)} nije djeljivo sa ${m}.</div>`; }
+    if (!v.isInt() || v.n % m !== 0n) {
+      const ok = []; for (let k = n0; k < n0 + 12; k++) { const w = f(k); if (w.isInt() && w.n % m === 0n) ok.push(k); }
+      return `<div class="verdict no">Tvrđenje NIJE tačno. Kontraprimjer: f(${n}) = ${fmtF(v)} nije djeljivo sa ${m}${v.isInt() ? ` (ostatak ${((v.n % m) + m) % m})` : ""}.</div>` + outcomeBox(ok.length ? `djeljivost važi samo za n ∈ {${ok.join(", ")}} (provjereno n = ${n0}…${n0 + 11}), a ne za sve n.` : "djeljivost ne važi ni za jedno provjereno n.") + insightBox(["Prije dokaza izračunaj f(1), f(2), f(3) i podijeli sa m. Ako ijedan nije djeljiv, odgovor je kontraprimjer."]);
+    }
   }
   const fb = f(n0);
   let h = `<div class="step">Neka je f<sub>n</sub> := ${esc(astStr(ast))}. Primijetimo da je<div class="eq mono">${m} | f<sub>n</sub> ⇔ ∃a<sub>n</sub> ∈ ℕ : f<sub>n</sub> = ${m}·a<sub>n</sub></div></div>`;
@@ -184,6 +187,7 @@ function indDjeljivost() {
         &nbsp;= ${m}·(${Aa}a<sub>k</sub>${sgnTerm(cm, yk, false)})<br>
         &nbsp;= ${m}·a<sub>k+1</sub></div>`;
       h += `<div class="step">što znači da je T(k+1) ⇔ ⊤. Ključni trik: f<sub>k+1</sub> smo izrazili kao ${Aa}·f<sub>k</sub> plus ostatak, a koeficijent ostatka ${c} je djeljiv sa ${m}${Y.konst ? "" : ` (${Y.s.eq(1) ? "" : Y.s.eq(-1) ? "−" : Y.s + "·"}${Y.s.eq(1) ? `${Bb} − ${Aa}` : `(${Bb} − ${Aa})`} = ${c})`}. Ovim smo dokazali da T(k) ⇒ T(k+1).</div>`;
+      h += insightBox([`Cijeli zadatak se „vidi“ iz jednog broja: ${Bb} − ${Aa} = ${Bb.sub(Aa)}${Bb.sub(Aa).n % m === 0n ? ` je djeljivo sa ${m}` : ""}, tj. ${Bb} ≡ ${Aa} (mod ${m}). Kad god se množi sa ${Bb}, to je za djeljivost sa ${m} isto kao množenje sa ${Aa}.`, "Uvijek izrazi f<sub>k+1</sub> preko f<sub>k</sub>: izvuci jedan zajednički faktor uz f<sub>k</sub>, a ostatak mora biti očigledno djeljiv."]);
       return h + `<div class="verdict ok">✔ Prema Principu matematičke indukcije, ${m} | f<sub>n</sub> za svaki prirodan broj n ≥ ${n0}.</div>`;
     }
     notify("Za ovaj izraz trik „f(k+1) = A·f(k) + (djeljivo)“ ne prolazi direktno – potreban je ručni postupak.", "warn");
@@ -223,7 +227,12 @@ function indNejednakost() {
   const n0 = intIn("#in-n0", "Početni n");
   const L = n => evalExact(lAst, { n }), D = n => evalExact(dAst, { n });
   const holds = n => strict ? L(n).cmp(D(n)) > 0 : L(n).cmp(D(n)) >= 0;
-  for (let n = n0; n < n0 + 30; n++) if (!holds(n)) { notify("Nejednakost nije tačna.", "err"); return `<div class="verdict no">✖ Za n = ${n}: L = ${fmtF(L(n))}, D = ${fmtF(D(n))} – nejednakost ne važi.</div>`; }
+  const okSet = []; for (let n = 1; n <= 40; n++) { try { if (holds(n)) okSet.push(n); } catch { } }
+  let thr = null; for (let m = 1; m <= 40; m++) { let all = true; for (let n = m; n <= 60; n++) { try { if (!holds(n)) { all = false; break; } } catch { all = false; break; } } if (all) { thr = m; break; } }
+  const descr = () => { const pre = thr ? okSet.filter(n => n < thr) : okSet; return (pre.length ? `n ∈ {${pre.join(", ")}}${thr ? " i " : ""}` : "") + (thr ? `svako n ≥ ${thr}` : "") || "nijedno provjereno n"; };
+  for (let n = n0; n < n0 + 30; n++) if (!holds(n)) {
+    return `<div class="verdict no">Za n ≥ ${n0} tvrđenje NIJE tačno. Kontraprimjer: za n = ${n} je L = ${fmtF(L(n))}, D = ${fmtF(D(n))}.</div>` + outcomeBox(`nejednakost važi za ${descr()} (provjereno do n = 60).${thr && thr > n0 ? ` Indukcija bi se mogla raditi tek od n = ${thr}.` : ""}`) + insightBox(["Tvrđenje može važiti za mala n, pa prestati, ili početi da važi tek od nekog n. Zato uvijek napravi malu tablicu za n = 1, …, 6 prije dokaza."]);
+  }
   const ls = astStr(lAst), ds = astStr(dAst);
   let h = `<div class="step"><b>T(n):</b> <span class="mono">${esc(ls)} ${op} ${esc(ds)}</span>, n ≥ ${n0}</div>`;
   h += `<div class="step"><b>(I) Provjerimo da li je T(${n0}) ⇔ ⊤.</b> L<sub>${n0}</sub> = ${esc(astStr(substAst(lAst, "n", { t: "num", v: Frac.of(n0) })))} = ${fmtF(L(n0))}, D<sub>${n0}</sub> = ${esc(astStr(substAst(dAst, "n", { t: "num", v: Frac.of(n0) })))} = ${fmtF(D(n0))}, pa je očigledno L<sub>${n0}</sub> ${op} D<sub>${n0}</sub> ⇒ T(${n0}) ⇔ ⊤.${n0 > 1 ? ` (Za manje n tvrđenje ne mora da važi – zato baza počinje od ${n0}.)` : ""}</div>`;
@@ -255,5 +264,6 @@ function indNejednakost() {
     h += `<div class="eq mono">L<sub>k+1</sub> = ${esc(astStr(substAst(lAst, "n", K1)))}<br>&nbsp;= ${esc(Lp.toString("k"))} + (${esc(dL.toString("k"))})<br>&nbsp;${op}<sup>(H)</sup> (${esc(Dp.toString("k"))}) + (${esc(dL.toString("k"))})<br>&nbsp;= ${esc(Dk1.toString("k"))} + (${esc(Hh.toString("k"))})<br>&nbsp;≥ ${esc(Dk1.toString("k"))} = D<sub>k+1</sub></div>`;
     h += `<div class="step">Koristili smo da je <span class="mono">${esc(Hh.toString("k"))} ≥ 0</span> za k ≥ ${n0}. Dakle L<sub>k+1</sub> ${op} D<sub>k+1</sub> ⇒ T(k+1) ⇔ ⊤.</div>`;
   }
-  return h + `<div class="verdict ok">✔ Prema Principu matematičke indukcije, tvrđenje je tačno za svaki prirodan broj n ≥ ${n0}.</div>`;
+  const smallBad = okSet.length ? Array.from({ length: n0 - 1 }, (_, i) => i + 1).filter(n => !okSet.includes(n)) : [];
+  return h + `<div class="verdict ok">✔ Prema Principu matematičke indukcije, tvrđenje je tačno za svaki prirodan broj n ≥ ${n0}.</div>` + (n0 > 1 || (thr && thr < n0) ? outcomeBox(`tačan skup n za koje nejednakost važi: ${descr()}.${smallBad.length ? ` Za n ∈ {${smallBad.join(", ")}} ne važi, zato baza ne može početi ranije.` : ""}${thr && thr < n0 ? ` Nejednakost važi već od n = ${thr}, pa je i baza n = ${thr} mogla.` : ""}`) : "") + insightBox(["Mala tablica (n = 1, …, 6) odmah pokazuje od kog n tvrđenje važi. Tako se zna gdje je baza.", "U koraku je cilj uvijek isti: L<sub>k+1</sub> napiši preko L<sub>k</sub>, iskoristi (H), pa pokaži da je „višak“ ≥ 0 za k ≥ baza."]);
 }

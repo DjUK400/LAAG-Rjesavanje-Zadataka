@@ -359,7 +359,9 @@ function skupoviRender() {
     const r = SET.ev(ast, e, steps);
     let h = `<div class="step">Zadato: ${Object.entries(e).map(([k, v]) => `${k} = ${esc(setStr(v))}`).join(", ")}</div><ol class="steps">`;
     steps.forEach(([s, v]) => h += `<li><span class="mono">${esc(s)}</span> = <b class="mono">${esc(setStr(v))}</b></li>`);
-    return h + `</ol><div class="verdict ok">${esc(SET.str(ast))} = ${esc(setStr(r))}</div>`;
+    h += `</ol><div class="verdict ok">${esc(SET.str(ast))} = ${esc(r.length ? setStr(r) : "∅")}</div>`;
+    if (!r.length) h += outcomeBox("rezultat je prazan skup ∅. To je potpuno ispravan odgovor: nijedan element ne zadovoljava sve uslove izraza.");
+    return h + insightBox(["Prije računanja pojednostavi izraz zakonima: A \\ B = A ∩ Bᶜ, (A ∪ B)ᶜ = Aᶜ ∩ Bᶜ, (A ∩ B)ᶜ = Aᶜ ∪ Bᶜ.", "Odmah prepoznaj: A ∩ Aᶜ = ∅, A ∪ Aᶜ = U, A \\ A = ∅, A Δ A = ∅, A Δ ∅ = A, (A \\ B) ∩ B = ∅, A ∩ ∅ = ∅, A ∪ ∅ = A."]);
   });
   $("#sk-all").onclick = () => runSafe($("#sk-out"), () => {
     const e = env(); if (!e.A || !e.B) throw new MathErr("Zadaj bar A i B.");
@@ -405,12 +407,30 @@ function skupoviRender() {
     }
     // analiza: obavezni / zabranjeni / slobodni
     let h = "";
-    if (!sols.length) return `<div class="verdict no">✖ Nijedan podskup ne zadovoljava uslove – zadatak nema rješenja.</div>`;
+    if (!sols.length) {
+      // zašto nema rješenja: koji uslov (sam ili u kombinaciji) je nemoguć
+      const subsets = []; for (let mask = 0; mask < (1 << S.length); mask++) subsets.push(S.filter((_, i) => mask >> i & 1));
+      const okFor = (c, X) => { const e = { X, S, U: S }, l = SET.ev(c.L, e), r = SET.ev(c.R, e); if (c.op === "=") return l.length === r.length && l.every(x => r.includes(x)); const sub = l.every(x => r.includes(x)); return c.op === "⊂" ? sub && l.length < r.length : sub; };
+      let why = "";
+      for (const c of conds) {
+        if (subsets.some(X => okFor(c, X))) continue;
+        const e0 = { X: [], S, U: S }, eS = { X: S, S, U: S };
+        const R0 = SET.ev(c.R, e0), RS = SET.ev(c.R, eS);
+        const Rconst = R0.length === RS.length && R0.every(x => RS.includes(x));
+        const canL = new Set(subsets.flatMap(X => SET.ev(c.L, { X, S, U: S })));
+        const missing = Rconst ? R0.filter(x => !canL.has(x)) : [];
+        why = missing.length ? `Uslov „${esc(c.line)}“ traži da lijeva strana sadrži ${esc(setStr(missing))}, a to nije moguće ni za jedan X ⊆ ${esc(setStr(S))}.` : `Već sam uslov „${esc(c.line)}“ nije ispunjen ni za jedan X ⊆ ${esc(setStr(S))}.`;
+        break;
+      }
+      if (!why) why = "Svaki uslov posebno ima rješenja, ali nijedan X ne zadovoljava sve uslove istovremeno (presjek njihovih skupova rješenja je ∅).";
+      return `<div class="verdict ok">Takav skup X ne postoji – zadatak nema rješenja.</div><div class="step">${why}</div>` + outcomeBox(`skup rješenja je ∅ (provjereno svih ${subsets.length} podskupova). Odgovor „ne postoji“ je ispravan i potpun odgovor.`);
+    }
     const must = S.filter(x => sols.every(X => X.includes(x))), never = S.filter(x => sols.every(X => !X.includes(x)));
     const free = S.filter(x => !must.includes(x) && !never.includes(x));
     h += `<div class="step">Elementi koji <b>moraju</b> biti u X: ${esc(setStr(must))}<br>Elementi koji <b>ne smiju</b> biti u X: ${esc(setStr(never))}<br>„Slobodni“ elementi: ${esc(setStr(free))}</div>`;
     h += `<div class="verdict ok">Zadatak ima ${sols.length} ${sols.length === 1 ? "rješenje" : "rješenja"}:<br><span class="mono">${sols.map(X => "X = " + (X.length ? setStr(X) : "∅")).join("<br>")}</span></div>`;
-    return h;
+    if (sols.length > 1) h += outcomeBox(`rješenje nije jedinstveno. Ima ih ${sols.length}${free.length && sols.length === 2 ** free.length ? ` = 2<sup>${free.length}</sup>, jer za svaki od ${free.length} slobodnih elemenata biramo da li je u X ili nije` : ""}. Odgovor mora navesti sva.`);
+    return h + insightBox(["Broj rješenja se vidi odmah: obavezni elementi moraju biti u X, zabranjeni ne smiju, a slobodnih k elemenata daje 2<sup>k</sup> mogućnosti.", "Zadatak može imati i 0 rješenja: npr. {1, 2} ∩ X = {3} je nemoguće, jer presjek sa {1, 2} ne može sadržati 3."]);
   });
   $("#sx-go").onclick = solveX;
   $("#sx-ex").onclick = () => { $("#sx-S").value = "2, 3, 4, 5"; $("#sx-cond").value = "{1, 2, 3} ∩ X = {2, 3}"; solveX(); };
@@ -428,7 +448,9 @@ function skupoviRender() {
       const R = IV.op([A, B], f);
       h += `<div class="ivres"><div class="mono"><b>${name}</b> = ${IV.str(R)}</div>${IV.svg([{ set: A, color: "#e5484d", label: "A" }, { set: B, color: "#3e63dd", label: "B" }, { set: R, color: "#30a46c", label: name.length > 3 ? "∗" : name }], [A, B])}</div>`;
     });
-    return h + `<p class="hint">Zeleno (∗) = traženi skup. Puni kružić = kraj pripada skupu [ ], prazan = ne pripada ( ).</p>`;
+    const special = ops.map(([name, f]) => [name, IV.op([A, B], f)]).filter(([, R]) => !R.length || (R.length === 1 && R[0].a === -Infinity && R[0].b === Infinity));
+    if (special.length) h += outcomeBox(special.map(([n, R]) => `${n} = ${R.length ? "ℝ" : "∅"}`).join(", ") + ". I ∅ i ℝ su ispravni rezultati.");
+    return h + `<p class="hint">Zeleno (∗) = traženi skup. Puni kružić = kraj pripada skupu [ ], prazan = ne pripada ( ).</p>` + insightBox(["Komplement intervala mijenja vrstu zagrade: (−1, 3)ᶜ = (−∞, −1] ∪ [3, +∞).", "Ako se A i B ne preklapaju, onda je A ∩ B = ∅ i A \\ B = A, bez crtanja.", "De Morgan: (A ∪ B)ᶜ = Aᶜ ∩ Bᶜ. Kad imaš jedan, drugi samo prepišeš."]);
   });
   $("#iv-go").onclick = ivSolve;
   $$("#tab-skupovi .ex[data-a]").forEach(b => b.onclick = () => { $("#iv-A").value = b.dataset.a; $("#iv-B").value = b.dataset.b; ivSolve(); });
@@ -438,7 +460,8 @@ function skupoviRender() {
     lastIq = IV.str(set).replace("ℝ = ", "");
     notify("Ovo je numerička provjera (posmatra se interval [−200, 200]); postupak rješavanja piši ručno.", "warn");
     if (approx) notify("Neke granice nisu lijepi razlomci – prikazane su približno (4 decimale).", "warn");
-    return `<div class="verdict ok mono">x ∈ ${IV.str(set)}</div>${IV.svg([{ set, color: "#30a46c", label: "x" }], [set])}`;
+    const full = set.length === 1 && set[0].a === -Infinity && set[0].b === Infinity;
+    return `<div class="verdict ok mono">x ∈ ${IV.str(set)}</div>${IV.svg([{ set, color: "#30a46c", label: "x" }], [set])}` + (!set.length ? outcomeBox("nejednačina nema rješenja: skup rješenja je ∅ (npr. kao |x| < −1).") : full ? outcomeBox("svaki realan broj je rješenje: skup rješenja je ℝ (npr. kao x² + 1 > 0).") : set.every(I => IV.cmp(I.a, I.b) === 0) ? outcomeBox("rješenje su samo izolovane tačke, a ne interval.") : "");
   });
   $("#iq-toA").onclick = () => { if (lastIq) $("#iv-A").value = lastIq.replace(/\+∞/g, "+inf").replace(/−∞/g, "-inf").replace(/−/g, "-"); else notify("Prvo riješi nejednačinu."); };
   $("#iq-toB").onclick = () => { if (lastIq) $("#iv-B").value = lastIq.replace(/\+∞/g, "+inf").replace(/−∞/g, "-inf").replace(/−/g, "-"); else notify("Prvo riješi nejednačinu."); };
@@ -468,16 +491,16 @@ function skupoviRender() {
       h += `<li>U presjeku: <b>${ab}</b>. Samo ${n1}: ${a} − ${ab} = <b>${R.a}</b>; samo ${n2}: ${b} − ${ab} = <b>${R.b}</b>.</li>`;
     }
     const parts = three ? [R.a, R.b, R.c, R.ab, R.ac, R.bc, R.abc] : [R.a, R.b, R.ab];
-    if (parts.some(x => x < 0)) throw new MathErr("Podaci su kontradiktorni – neki dio dijagrama ispada negativan. Provjeri brojeve (ili opciju „samo ta dva“).");
+    if (parts.some(x => x < 0)) return h + `</ol><div class="verdict no">Takva situacija nije moguća: neki dio dijagrama ispada negativan (${parts.filter(x => x < 0).join(", ")}).</div>` + outcomeBox("podaci su protivrječni, pa zadatak nema rješenja. Ako nisi pogriješio pri unosu, to je odgovor. Provjeri i opciju „samo ta dva“: ako je ona namjera zadatka, rezultat se mijenja.");
     const union = parts.reduce((s, x) => s + x, 0);
     R.none = tot === null ? null : tot - union;
-    if (R.none !== null && R.none < 0) throw new MathErr(`Ukupno (${tot}) je manje od broja elemenata u uniji (${union}) – podaci su kontradiktorni.`);
+    if (R.none !== null && R.none < 0) return h + `</ol><div class="verdict no">Takva situacija nije moguća: u uniji je ${union} elemenata, a ukupno ih je samo ${tot}.</div>` + outcomeBox("podaci su protivrječni (dio „ni u jednom“ bi bio negativan), pa zadatak nema rješenja.");
     const one = three ? R.a + R.b + R.c : R.a + R.b, two = three ? R.ab + R.ac + R.bc : R.ab;
     h += `<li>U uniji (bar jedan): ${parts.join(" + ")} = <b>${union}</b>.</li>`;
     h += `</ol>${vennSvg([n1, n2, n3], R, three)}`;
     h += `<table class="res"><tr><td>Ukupno u uniji (bar jedno)</td><td><b>${union}</b></td></tr><tr><td>Tačno jedno (samo jedan skup)</td><td><b>${one}</b></td></tr><tr><td>Tačno dva</td><td><b>${two}</b></td></tr>${three ? `<tr><td>Sva tri</td><td><b>${R.abc}</b></td></tr>` : ""}${R.none !== null ? `<tr><td>Ni u jednom (${tot} − ${union})</td><td><b>${R.none}</b></td></tr>` : ""}</table>`;
     if (three && !only) h += `<p class="hint">Provjera formulom: ${a}+${b}+${c} − ${ab} − ${ac} − ${bc} + ${abc} = ${a + b + c - ab - ac - bc + abc}.</p>`;
-    return h;
+    return h + insightBox(["Uvijek kreni od sredine (presjek sva tri), pa parovi, pa „samo jedan“. Tako se ništa ne broji dva puta.", "Brza provjera smislenosti: svaki dio dijagrama mora biti ≥ 0, presjek ne može biti veći od skupa, a unija ne može biti veća od ukupnog broja. Ako nešto od toga ne važi, situacija je nemoguća i to je odgovor."]);
   });
   $("#vn-go").onclick = vnSolve;
   $$("#tab-skupovi .ex[data-v]").forEach(btn => btn.onclick = () => {

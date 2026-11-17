@@ -8,7 +8,9 @@ Besplatna web aplikacija za studente prve godine (Građevinski fakultet, Univerz
 
 Svaki tab (oblast) ima **podtabove**: prvi je **📘 Pravila** sa svom teorijom te oblasti, a ostali su po jedna vrsta zadatka (npr. Indukcija → Pravila | Zbir | Djeljivost | Nejednakost). Uz svaki zadatak su dugmad sa primjerima iz materijala.
 
-U tabovima za kompleksne brojeve uz rješenje stoji i **💡 „Kako bi ovo inženjer vidio odmah“** (brži put do rezultata), a posljednji podtab je **⚡ Vidi odmah**: trening pitanja koja se, uz razumijevanje, rješavaju u glavi za par sekundi.
+U **svim** tabovima uz rješenje stoji **💡 „Kako bi ovo inženjer vidio odmah“** (brži put do rezultata), a posljednji podtab je **⚡ Vidi odmah**: trening pitanja koja se, uz razumijevanje, rješavaju u glavi za par sekundi. Među njima su i „zamke“.
+
+Rješavači daju i rezultate koji nisu „lijepi“: **∅**, „nema rješenja“, „beskonačno mnogo rješenja“, „ne postoji“, „tvrđenje nije tačno (kontraprimjer)“ ili „važi tek od n = …“. To su normalni odgovori, a ne greške (okvir **🧭 Ishod zadatka**). U Pravilima svake oblasti je pregled „🧭 Kakav sve može biti rezultat“.
 
 Radi na računaru i na telefonu, ima svijetlu i tamnu temu i ne traži instalaciju ni nalog.
 
